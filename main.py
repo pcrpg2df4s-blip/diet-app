@@ -355,11 +355,7 @@ async def cmd_start(message: Message, state: FSMContext):
 
         await message.answer(
             f"👋 С возвращением, <b>{name}</b>!\n"
-            f"Сегодня съедено: <b>{c_cal} / {limit} ккал</b>\n\n"
-            f"Твои нормы на день:\n"
-            f"🥩 Белки: {p_max}г\n"
-            f"🥑 Жиры: {f_max}г\n"
-            f"🥖 Углеводы: {c_max}г", 
+            f"Сегодня съедено: <b>{c_cal} / {limit} ккал</b>\n\n", 
             reply_markup=keyboard,
             parse_mode=ParseMode.HTML
         )
@@ -784,6 +780,11 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
     food_data = data.get("food_temp")
     
     if not food_data:
+        # Если данные устарели - просто удаляем сообщение и пишем ошибку
+        try:
+            await callback.message.delete()
+        except:
+            pass
         await callback.message.answer("⚠️ Данные устарели.")
         await callback.answer()
         return
@@ -791,7 +792,6 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
     # 1. Парсим данные еды
     cals = food_data.get('cals', 0)
     
-    # Пытаемся достать БЖУ из текста, если их нет - ставим 0
     import re
     text = food_data.get('raw_text', '')
     def get_val(key):
@@ -803,11 +803,13 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
     carbs = get_val("Углеводы")
 
     async with aiosqlite.connect(DB_NAME) as db:
+        today = date.today().isoformat()
+        
         # 2. Сохраняем еду в историю
         await db.execute("""
             INSERT INTO food_log (user_id, food_name, calories, proteins, fats, carbs, date)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, food_data['name'], cals, prot, fats, carbs, date.today().isoformat()))
+        """, (user_id, food_data['name'], cals, prot, fats, carbs, today))
         
         # 3. Обновляем счетчики пользователя
         await db.execute("""
@@ -819,7 +821,7 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
             WHERE user_id = ?
         """, (cals, prot, fats, carbs, user_id))
         
-        # 4. Читаем обновленные данные (ОСТОРОЖНО С ПОРЯДКОМ ПОЛЕЙ!)
+        # 4. Читаем обновленные данные
         async with db.execute("""
             SELECT weight, height, age, calories_limit, 
                    consumed_calories, consumed_protein, consumed_fat, consumed_carbs 
@@ -830,23 +832,22 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
         await db.commit()
 
     if row:
-        # Распаковываем данные по порядку (как в SELECT)
         weight, height, age, limit, c_cal, c_prot, c_fat, c_carb = row
         
         name = callback.from_user.first_name or "Gourmet"
         limit = limit or 2500
         
-        # Считаем нормы БЖУ автоматически (30% / 30% / 40%)
+        # Считаем нормы БЖУ
         p_max = int((limit * 0.3) / 4)
         f_max = int((limit * 0.3) / 9)
         c_max = int((limit * 0.4) / 4)
 
-        base_url = "https://pcrpg2df4s-blip.github.io/diet-app/" # ТВОЯ ССЫЛКА
+        base_url = "https://pcrpg2df4s-blip.github.io/diet-app/"
         url_with_params = (
             f"{base_url}?"
             f"calories={limit}&name={name}&weight={weight}&height={height}&age={age}&goal=Цель&"
             f"c_cal={c_cal}&c_prot={c_prot}&c_fat={c_fat}&c_carb={c_carb}&"
-            f"p_max={p_max}&f_max={f_max}&c_max={c_max}" # Передаем нормы в ссылку
+            f"p_max={p_max}&f_max={f_max}&c_max={c_max}"
         )
 
         await callback.bot.set_chat_menu_button(
@@ -854,11 +855,20 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
             menu_button=MenuButtonWebApp(text="Дневник", web_app=WebAppInfo(url=url_with_params))
         )
 
-        await callback.message.edit_text(
+        # === ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ ===
+        # Удаляем старое сообщение с фото
+        try:
+            await callback.message.delete()
+        except:
+            pass # Если вдруг уже удалено
+        
+        # И отправляем новое чистое сообщение
+        await callback.message.answer(
             f"✅ <b>Записано!</b>\n• {food_data['name']} ({cals} ккал)",
-            reply_markup=None,
             parse_mode=ParseMode.HTML
         )
+        # ==============================
+
         # Возвращаем главное меню
         await callback.message.answer("Главное меню:", reply_markup=main_menu_kb())
     
