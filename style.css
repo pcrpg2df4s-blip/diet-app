@@ -604,3 +604,38 @@ body {
         height: 20px;
     }
 }
+
+/* === БОЛЬШАЯ КАРТОЧКА ДИЕТОЛОГА === */
+
+.advice-card {
+    /* Большие внутренние отступы */
+    padding: 30px 25px !important; 
+    
+    /* Минимальная высота (чтобы не сплющивалась) */
+    min-height: 160px; 
+    
+    /* Центрирование */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    
+    border-radius: 20px;
+    margin-top: 25px;
+    /* Убедись, что тут стоит твой цвет фона, например: */
+    /* background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); */
+}
+
+/* Заголовок "✨ Диетолог" */
+.advice-card h3 {
+    font-size: 20px !important;     /* Крупный заголовок */
+    font-weight: 800 !important;
+    margin-bottom: 15px !important; /* Отступ до текста */
+}
+
+/* Сам текст совета */
+.advice-card p {
+    font-size: 17px !important;     /* Крупный текст (стандарт обычно 14-15) */
+    line-height: 1.6 !important;    /* Расстояние между строчками */
+    font-weight: 500;               /* Чуть жирнее обычного */
+    margin: 0;
+}
