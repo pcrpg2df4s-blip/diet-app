@@ -1,0 +1,606 @@
+/* В САМОЕ НАЧАЛО STYLE.CSS */
+* {
+    box-sizing: border-box; /* Самое важное правило */
+    -webkit-tap-highlight-color: transparent; /* Убирает синюю вспышку при клике на айфонах */
+}
+
+html, body {
+    width: 100%;
+    overflow-x: hidden; /* Запрещаем горизонтальную прокрутку */
+    margin: 0;
+    padding: 0;
+}
+:root {
+    /* --- НАША ПАЛИТРА --- */
+    --primary: #80cbc4;       /* Пастельный бирюзовый */
+    --primary-dark: #4db6ac;  
+    --secondary: #b39ddb;     /* Пастельный фиолетовый */
+    --secondary-dark: #9575cd;
+    
+    --bg-color: #f7f9fc;      /* Светлый фон всего приложения */
+    --card-bg: #ffffff;       /* Белый фон карточек */
+    --text-main: #37474f;     /* Темно-серый текст */
+    --text-light: #90a4ae;    /* Светло-серый текст */
+    
+    --accent-orange: #ffcc80; /* Для мелких деталей (если нужно) */
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    user-select: none; /* Убираем выделение текста (ощущение приложения) */
+    -webkit-tap-highlight-color: transparent; /* Убираем синюю подсветку при клике на Android */
+}
+
+/* --- СИСТЕМА ВКЛАДОК (TABS) --- */
+/* СКРЫВАЕМ все вкладки по умолчанию */
+.tab-content {
+    display: none;
+    padding-bottom: 80px; /* Чтобы контент не прятался за нижним меню */
+    animation: fadeIn 0.3s ease; /* Плавное появление */
+}
+
+/* ПОКАЗЫВАЕМ только ту, у которой класс active */
+.tab-content.active {
+    display: block;
+}
+
+/* Анимация (для красоты) */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- ШАПКА ГЛАВНОГО ЭКРАНА (НОВЫЙ ДИЗАЙН) --- */
+.main-header-bg {
+    background: linear-gradient(to bottom right, #80cbc4, #b39ddb);
+    padding: 20px 20px 90px 20px; /* Большой отступ снизу для наложения карточек */
+    color: white;
+    text-align: center;
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Название приложения в шапке */
+.app-title {
+    /* Этот набор шрифтов включает San Francisco на iOS/Mac */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    font-size: 38px;
+    font-weight: 800; /* Полужирный, как в заголовках iOS */
+    color: white;
+    margin-bottom: 15px; /* Отступ до круга */
+    letter-spacing: -0.5px; /* Чуть плотнее буквы (фишка SF шрифта) */
+    opacity: 0.95;
+}
+
+.top-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.stat-side {
+    display: flex;
+    flex-direction: column;
+    width: 90px; /* Ширина под крупные цифры */
+}
+
+/* Крупные цифры слева и справа */
+.stat-val { 
+    font-size: 28px; 
+    font-weight: 800; 
+    line-height: 1.2;
+}
+.stat-label { font-size: 12px; opacity: 0.9; }
+
+/* Центральный круг */
+.main-progress-circle {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.circle-content {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.circle-big { 
+    font-size: 38px; 
+    font-weight: 800; 
+    line-height: 1; 
+}
+/* Маленькая надпись "Потреблено" */
+.circle-label { 
+    font-size: 10px; 
+    opacity: 0.8; 
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* SVG кольцо прогресса */
+.progress-ring__circle {
+    transition: 0.5s stroke-dashoffset; /* Плавная анимация */
+    transform: rotate(-90deg); /* Начало сверху */
+    transform-origin: 50% 50%; /* Вращаем вокруг центра */
+    stroke-linecap: round; /* Закругленные края линии */
+}
+
+/* --- КАРТОЧКИ БЖУ (НАЛОЖЕНИЕ) --- */
+.macros-overlay-container {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
+    margin-top: -60px; /* Тянем вверх на синий фон */
+    position: relative;
+    z-index: 2;
+    gap: 10px;
+}
+
+.macro-card-new {
+    background: white;
+    border-radius: 16px;
+    padding: 12px 8px;
+    width: 32%;
+    text-align: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.macro-title { 
+    font-weight: bold; 
+    font-size: 13px; 
+    margin-bottom: 10px; 
+    color: var(--text-main); 
+}
+.macro-line {
+    height: 5px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+.macro-line .fill {
+    height: 100%;
+    border-radius: 3px;
+}
+
+/* 🔥 НОВОЕ: Если перебор - красим в красный */
+.macro-val { font-size: 12px; color: var(--text-light); }
+
+/* --- ОСНОВНОЙ КОНТЕНТ --- */
+.home-content-wrapper {
+    padding: 20px;
+}
+
+/* Карточка AI-совета */
+.ai-tip-card {
+    background: linear-gradient(45deg, #ede7f6, #e1bee7); /* Очень светлый фиолетовый */
+    border-radius: 16px;
+    padding: 15px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #4a148c;
+    margin-top: 10px;
+}
+.ai-header { font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+
+/* Навигация по датам */
+.date-navigator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 15px 0;
+    color: var(--text-main);
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+/* --- СПИСОК ЕДЫ --- */
+/* --- СПИСОК ЕДЫ (ТОЛЬКО ИКОНКИ КРУПНЕЕ) --- */
+.meals-list {
+    padding-bottom: 20px;
+}
+.meal-item {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+/* 1. СЕРЫЙ КВАДРАТ (Оставляем оригинальный размер) */
+.meal-icon {
+    width: 44px;   /* <-- Вернули как было */
+    height: 44px;  /* <-- Вернули как было */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border-radius: 12px;
+    margin-right: 15px;
+}
+
+/* 2. УВЕЛИЧИВАЕМ ТОЛЬКО КАРТИНКУ ВНУТРИ */
+.meal-icon img { 
+    width: 38px;   /* Было 28px -> Стало 38px */
+    height: 38px;  /* Было 28px -> Стало 38px */
+    object-fit: contain; /* Чтобы картинка не обрезалась, если не влезет */
+}
+
+.meal-info { flex-grow: 1; }
+.meal-info h4 { margin: 0; font-size: 16px; font-weight: 600; }
+.meal-info span { font-size: 13px; color: var(--text-light); }
+
+.add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f0f0f0;
+    color: var(--text-main);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stats-card .chart-container {
+    height: 250px; /* Adjust height as needed */
+    margin-top: 20px;
+}
+
+/* --- СТАТИСТИКА И ПРОФИЛЬ --- */
+.stats-card, .referral-card, .settings-group {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+.highlight-text { margin: 5px 0 20px 0; color: var(--text-main); }
+.legend { display: flex; gap: 15px; justify-content: center; margin-top: 15px; font-size: 12px; }
+
+/* Food History List */
+#food-history-list {
+    margin-top: 20px;
+}
+
+.history-item {
+    background: #fff;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+.history-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.history-item-macros {
+    display: flex;
+    justify-content: space-around;
+    font-size: 12px;
+    color: var(--text-light);
+    padding-top: 10px;
+    border-top: 1px solid #f0f0f0;
+}
+
+.add-weight-btn {
+    background: var(--secondary);
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Профиль */
+/* === ШАПКА ПРОФИЛЯ (Новая с градиентом) === */
+.profile-header { 
+    /* Наш фирменный градиент */
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    
+    /* Отступы, чтобы было просторно */
+    padding: 25px 20px 30px 20px; 
+    
+    text-align: center;
+    color: white; /* Текст теперь белый */
+    
+    /* Скругляем углы снизу, как на Главной */
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    
+    margin-bottom: 25px;
+    margin-top: 0;
+    
+    /* Тень, чтобы красиво "висело" над фоном */
+    box-shadow: 0 10px 20px rgba(179, 157, 219, 0.2);
+}
+
+/* Имя пользователя */
+.profile-header h2 {
+    margin: 15px 0 10px 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Бейдж PRO */
+.badge { 
+    background: #ffd54f; /* Желтый акцент */
+    color: #37474f;
+    padding: 4px 12px; 
+    border-radius: 12px; 
+    font-size: 12px; 
+    font-weight: 800;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 15px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-row .val { font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+
+.referral-card { border: 2px solid var(--secondary); text-align: center; } /* Рамка теперь фиолетовая */
+.ref-btn { background: none; border: none; color: var(--secondary-dark); font-weight: bold; cursor: pointer; margin-top: 10px;}
+
+/* --- НИЖНЕЕ МЕНЮ --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: white;
+    height: 70px;
+    border-radius: 35px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+.nav-item {
+    font-size: 24px;
+    color: #cfd8dc;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.nav-item.active {
+    color: var(--text-main);
+    background: #eceff1;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+/* --- ПЛАВАЮЩАЯ КНОПКА (ОБНОВЛЕННАЯ) --- */
+.floating-add {
+    position: absolute;
+    right: 25px;
+    bottom: 85px; /* Чуть подняли */
+    
+    /* ТЕПЕРЬ ОНА ФИОЛЕТОВАЯ (в тему) */
+    background: var(--secondary); 
+    
+    width: 60px; /* Чуть крупнее */
+    height: 60px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    
+    /* Тень тоже фиолетовая */
+    box-shadow: 0 4px 15px rgba(179, 157, 219, 0.6);
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+.floating-add:active {
+    transform: scale(0.95);
+}
+
+/* Было: width: 80px; height: 80px; */
+.avatar img { 
+    width: 70px;  /* <-- Сделали чуть меньше */
+    height: 70px; /* <-- Сделали чуть меньше */
+    border-radius: 50%; 
+    border: 3px solid white; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+}
+
+/* Заголовок "Журнал питания" */
+#tab-stats h2 {
+    padding-left: 20px; /* Отступ слева */
+    margin-top: 25px;   /* Отступ сверху */
+    margin-bottom: 15px; 
+    font-size: 32px;    /* Был обычный, стал крупный (как на айфоне) */
+    font-weight: 800;   /* Жирный шрифт */
+    letter-spacing: -0.5px; /* Чуть плотнее буквы для стиля */
+}
+
+/* === ЛОГИКА ВКЛАДОК (Вставь это в style.css) === */
+
+/* 1. По умолчанию СКРЫВАЕМ все секции */
+.content-section {
+    display: none; /* Спрятать всё */
+    padding-bottom: 50px; /* Отступ снизу, чтобы меню не перекрывало контент */
+    animation: fadeIn 0.3s ease-in-out; /* Плавное появление */
+}
+
+/* 2. Показываем ТОЛЬКО активную секцию */
+.content-section.active {
+    display: block; /* Показать */
+}
+
+/* 3. Фиксируем меню внизу экрана */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    z-index: 1000; /* Чтобы меню было поверх всего */
+    border-top: 1px solid #eee;
+    padding-bottom: env(safe-area-inset-bottom); /* Для айфонов без кнопок */
+}
+
+/* Анимация плавного появления */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === ГРАФИК НЕДЕЛИ === */
+.chart-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.chart-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.chart-container {
+    display: flex;
+    justify-content: space-between;
+    height: 160px; /* Высота графика */
+    position: relative;
+    padding-top: 20px;
+}
+
+/* Пунктирная линия нормы */
+.goal-line {
+    position: absolute;
+    left: 0; 
+    right: 0;
+    bottom: 0; /* JS поднимет её на нужную высоту */
+    border-top: 2px dashed #d1d8e0;
+    z-index: 1;
+}
+
+.goal-line::after {
+    content: "Норма";
+    position: absolute;
+    right: 0;
+    top: -20px;
+    font-size: 10px;
+    color: #95a5a6;
+    background: white;
+    padding-left: 5px;
+}
+
+/* Столбики */
+.chart-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    width: 10%;
+    height: 100%;
+    z-index: 2;
+}
+
+.chart-col span {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #95a5a6;
+    font-weight: 600;
+}
+
+.bar-bg {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    border-radius: 10px;
+}
+
+.bar-fill {
+    width: 12px; /* Толщина полоски */
+    margin: 0 auto;
+    border-radius: 10px;
+    height: 4px; /* Стартовая высота */
+    transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 🔥 ТВОЙ ЦВЕТ: Бирюзовый низ -> Фиолетовый верх */
+.bar-fill.active {
+    box-shadow: 0 4px 10px rgba(160, 148, 240, 0.4);
+}
+
+/* Если сегодня - подсветим день */
+.chart-col.today span {
+    color: #A094F0;
+    font-weight: 800;
+}
+
+/* === АДАПТАЦИЯ ПОД МАЛЕНЬКИЕ ТЕЛЕФОНЫ === */
+@media (max-width: 380px) {
+    
+    /* Уменьшаем круг и цифры внутри */
+    .progress-ring {
+        width: 180px;
+        height: 180px;
+    }
+    
+    /* Уменьшаем шрифт заголовков в карточках БЖУ */
+    .macro-v-card h3 {
+        font-size: 13px !important; /* Было 16, делаем меньше */
+        margin-bottom: 8px;
+    }
+
+    /* Уменьшаем текст "0/188г" */
+    .v-macro-text {
+        font-size: 11px !important;
+    }
+
+    /* Делаем сами карточки чуть компактнее */
+    .macro-v-card {
+        height: 120px; /* Чуть ниже */
+        padding: 10px 2px;
+    }
+
+    /* Если кнопки внизу слишком огромные */
+    .nav-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+}
