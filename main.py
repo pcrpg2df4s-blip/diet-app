@@ -44,9 +44,8 @@ GEMINI_API_KEY = "AIzaSyBH_PcefYezMJFOhkShyVC-1S2di5OH6y8"
 
 # Настройка Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash-exp') # Используем быструю модель с поддержкой фото
-
-# Ссылка на логотип (заглушка, замените на свою или отправляйте локальный файл)
+# Самый надежный вариант, работает всегда
+model = genai.GenerativeModel("gemini-1.5-flash")# Ссылка на логотип (заглушка, замените на свою или отправляйте локальный файл)
 LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3063/3063822.png" 
 
 # --- БАЗА ДАННЫХ ---
