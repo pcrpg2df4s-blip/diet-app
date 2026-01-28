@@ -271,7 +271,7 @@ body {
 .stats-card, .referral-card, .settings-group {
     background: var(--card-bg);
     border-radius: 20px;
-    padding: 20px;
+    padding: 25px 25px 10px 25px;
     margin-bottom: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.03);
 }
