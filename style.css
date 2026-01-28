@@ -649,7 +649,7 @@ body {
     
     border-radius: 20px;     /* Сильное скругление */
     padding: 16px;
-    margin: 0 15px 15px 15px;
+    margin: 8px 15px; /* 8px сверху/снизу (плотнее), 15px по бокам */
     
     /* Мягкая тень */
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
