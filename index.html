@@ -685,7 +685,6 @@ body {
 
 
     <div id="stats" class="content-section">
-        <h1 style="margin-left: 15px;">Журнал питания</h1>
         
         <div class="stats-card">
             <div class="stats-header">
@@ -699,7 +698,15 @@ body {
             </div>
         </div>
 
-        <div id="food-history-list"></div>
+        <div class="food-history-container">
+            <h3 style="margin-left: 15px; margin-top: -20px; margin-bottom: 10px;">
+                История за сегодня
+            </h3>
+
+            <div id="food-list"></div>
+
+            <div style="height: 100px;"></div>
+        </div>
         
     </div>
 
@@ -785,15 +792,6 @@ body {
         </a>
     </nav>
 
-<div class="food-history-container">
-        <h3 style="margin-left: 15px; margin-top: -100px; margin-bottom: 10px;">
-            История за сегодня
-        </h3>
-
-        <div id="food-list"></div>
-
-        <div style="height: 100px;"></div>
-    </div>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
 </body>
