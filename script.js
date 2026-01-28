@@ -1,55 +1,53 @@
-// ==========================================
-// 1. ИНИЦИАЛИЗАЦИЯ ТЕЛЕГРАМА (САМОЕ ВАЖНОЕ)
-// ==========================================
-let tg = null;
-try {
-    if (window.Telegram && window.Telegram.WebApp) {
-        tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand(); // Раскрыть на весь экран
-    }
-} catch (e) {
-    console.error("Ошибка Telegram:", e);
-}
+/* ==========================================
+   ДИАГНОСТИЧЕСКАЯ ВЕРСИЯ SCRIPT.JS
+   ========================================== */
 
-// ==========================================
-// 2. ГЛОБАЛЬНАЯ ФУНКЦИЯ УДАЛЕНИЯ
-// ==========================================
+// 1. Глобальная функция удаления с ПРОВЕРКАМИ
 window.deleteFood = function(id) {
-    // 1. Спрашиваем подтверждение
-    if (!confirm('Удалить эту запись?')) return;
+    // Этап 1: Проверка клика
+    alert("ЭТАП 1: Функция вызвана. ID еды: " + id);
 
-    // 2. Проверяем, работает ли Телеграм
-    if (!tg) {
-        alert("Ошибка: Приложение открыто не в Telegram или скрипт не загрузился.");
-        return;
-    }
+    if (!confirm('Точно удалить?')) return;
 
-    try {
-        // 3. Готовим данные
-        const data = JSON.stringify({
-            action: 'delete_food',
-            id: id
-        });
+    // Этап 2: Проверка библиотеки Телеграм
+    if (window.Telegram && window.Telegram.WebApp) {
+        alert("ЭТАП 2: Телеграм найден!");
         
-        // 4. Отправляем!
-        tg.sendData(data);
-        
-        // 5. На всякий случай закрываем окно принудительно (если sendData тупит)
-        setTimeout(() => {
+        try {
+            const tg = window.Telegram.WebApp;
+            
+            // Этап 3: Подготовка данных
+            const data = JSON.stringify({
+                action: 'delete_food',
+                id: id
+            });
+            alert("ЭТАП 3: Данные готовы: " + data);
+
+            // Этап 4: Отправка
+            tg.sendData(data);
+            alert("ЭТАП 4: Данные отправлены! (Если окно не закроется, значит бот их не принял)");
+            
+            // Принудительное закрытие
             tg.close();
-        }, 100);
 
-    } catch (error) {
-        alert("Ошибка отправки: " + error.message);
+        } catch (e) {
+            alert("ОШИБКА выполнения: " + e.message);
+        }
+    } else {
+        alert("ОШИБКА: Скрипт Телеграма НЕ ПОДКЛЮЧЕН в index.html!");
     }
 };
 
-// ==========================================
-// 3. ОСНОВНОЙ КОД СТРАНИЦЫ
-// ==========================================
 document.addEventListener('DOMContentLoaded', function() {
     
+    // --- Инициализация Телеграма (для расширения окна) ---
+    try {
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
+    } catch (e) { console.log(e); }
+
     const urlParams = new URLSearchParams(window.location.search);
     
     // --- Сбор данных ---
@@ -66,7 +64,7 @@ document.addEventListener('DOMContentLoaded', function() {
         c_carb: urlParams.get('c_carb') || "0"
     };
 
-    // --- Обновление UI ---
+    // --- UI ---
     function safeSetText(id, text) {
         const el = document.getElementById(id);
         if (el) el.innerText = text;
@@ -79,11 +77,10 @@ document.addEventListener('DOMContentLoaded', function() {
         safeSetText('user-height', currentData.height);
         safeSetText('user-age', currentData.age);
         safeSetText('user-goal', currentData.goal);
-
         safeSetText('stats-calories-today', `${currentData.c_cal} ккал`);
         safeSetText('consumed-val', parseInt(currentData.c_cal));
 
-        // Круг прогресса
+        // Круг
         const goal = parseInt(currentData.calories);
         const consumed = parseInt(currentData.c_cal);
         const percent = Math.min((consumed / goal) * 100, 100);
@@ -99,7 +96,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const p_max = urlParams.get('p_max') || Math.round((goal * 0.3) / 4);
         const f_max = urlParams.get('f_max') || Math.round((goal * 0.3) / 9);
         const c_max = urlParams.get('c_max') || Math.round((goal * 0.4) / 4);
-
         const p_cur = parseInt(currentData.c_prot) || 0;
         const f_cur = parseInt(currentData.c_fat) || 0;
         const c_cur = parseInt(currentData.c_carb) || 0;
@@ -107,12 +103,11 @@ document.addEventListener('DOMContentLoaded', function() {
         safeSetText('prot-val', p_cur); safeSetText('prot-max', p_max);
         safeSetText('fat-val', f_cur);  safeSetText('fat-max', f_max);
         safeSetText('carb-val', c_cur); safeSetText('carb-max', c_max);
-
         setBar('prot-bar', p_cur, p_max);
         setBar('fat-bar', f_cur, f_max);
         setBar('carb-bar', c_cur, c_max);
         
-        // Отрисовка списка еды
+        // Список еды
         const foodLogParam = urlParams.get('food_log');
         renderFoodList(foodLogParam);
     }
@@ -127,7 +122,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- Отрисовка карточек ---
     function renderFoodList(foodLogRaw) {
         const listContainer = document.getElementById('food-list');
         if (!listContainer) return;
@@ -143,7 +137,6 @@ document.addEventListener('DOMContentLoaded', function() {
                  listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Сегодня записей нет</p>';
                  return;
             }
-
             listContainer.innerHTML = ''; 
 
             foodList.forEach(item => {
@@ -163,14 +156,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 `;
                 listContainer.appendChild(card);
             });
-        } catch (e) {
-            console.error(e);
-        }
+        } catch (e) { console.error(e); }
     }
 
     updateUI();
 
-    // --- Навигация и График ---
+    // Навигация и График
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
@@ -184,7 +175,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // График статистики
     let statsChart = null;
     function initStatsChart() {
         const ctx = document.getElementById('caloriesChart');
@@ -192,8 +182,6 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const historyStr = urlParams.get('history') || '0,0,0,0,0,0,0';
         const historyData = historyStr.split(',').map(Number);
-        
-        // Обновляем текущий день
         const todayIndex = (new Date().getDay() + 6) % 7;
         historyData[todayIndex] = parseInt(currentData.c_cal) || 0;
 
@@ -222,8 +210,5 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     }
-    
-    if (document.getElementById('stats').classList.contains('active')) {
-        initStatsChart();
-    }
+    if (document.getElementById('stats').classList.contains('active')) initStatsChart();
 });
