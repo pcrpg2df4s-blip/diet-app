@@ -640,3 +640,84 @@ body {
     margin: 0;
 }
 
+/* === КАРТОЧКИ ИСТОРИИ (Пастельный стиль) === */
+
+.food-card {
+    /* Нежный градиент: от светлой бирюзы к лаванде */
+    background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%); /* Запасной вариант */
+    background: linear-gradient(135deg, #E0F7FA 0%, #E1BEE7 100%); /* Бирюза -> Фиолетовый */
+    
+    border-radius: 20px;     /* Сильное скругление */
+    padding: 16px;
+    margin: 0 15px 15px 15px;
+    
+    /* Мягкая тень */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    
+    /* Темный текст для контраста на светлом фоне */
+    color: #333333;
+    position: relative; /* Для позиционирования кнопки удаления */
+}
+
+.food-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.food-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #2c3e50; /* Темно-синий текст заголовка */
+}
+
+.food-calories {
+    font-size: 24px;
+    font-weight: 800;
+    color: #5E35B1; /* Насыщенный фиолетовый для цифр */
+    margin-bottom: 8px;
+}
+
+/* Блок БЖУ */
+.food-macros {
+    display: flex;
+    gap: 12px;
+    font-size: 13px;
+    background: rgba(255, 255, 255, 0.6); /* Полупрозрачная белая подложка */
+    padding: 8px 12px;
+    border-radius: 12px;
+    width: fit-content; /* Ширина по содержимому */
+}
+
+.macro-item span {
+    font-weight: 700;
+    color: #333;
+}
+
+/* Кнопка удаления (Аккуратная иконка справа) */
+.btn-delete {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    
+    background: rgba(255, 0, 0, 0.1); /* Легкий красный фон */
+    color: #D32F2F;
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+    cursor: pointer;
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.btn-delete:active {
+    background: rgba(255, 0, 0, 0.2);
+    transform: scale(0.95);
+}
+
