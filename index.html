@@ -14,7 +14,7 @@
             color: #333; /* Темный текст */
             margin: 0;
             padding: 20px;
-            padding-bottom: 80px; /* Отступ снизу, чтобы контент не перекрывался таббаром */
+            padding-bottom: 90px; /* Увеличил отступ снизу, чтобы контент не перекрывался меню */
             box-sizing: border-box;
         }
 
@@ -101,7 +101,7 @@
             font-family: sans-serif;
         }
         .progress-ring-value {
-            font-size: 32px; /* Уменьшил шрифт, чтобы не съезжал */
+            font-size: 32px;
             font-weight: bold;
             color: #222;
             line-height: 1;
@@ -112,10 +112,10 @@
             margin-top: 5px;
         }
 
-        /* Черная иконка огня (уже без градиента) */
+        /* Черная иконка огня */
         .fire-icon-black {
             font-size: 24px;
-            color: #222; /* Просто черный цвет */
+            color: #222;
             margin-top: 5px;
         }
 
@@ -123,14 +123,14 @@
         /* === Карточки Макронутриентов (Белки, Жиры, Углеводы) === */
         .macros-cards-row {
             display: flex;
-            justify-content: space-between; /* Распределяем карточки равномерно */
+            justify-content: space-between;
             width: 100%;
-            gap: 10px; /* Расстояние между карточками */
+            gap: 10px;
         }
 
         .macro-card {
-            flex: 1; /* Растягиваем карточки по ширине */
-            background: #F9FAFB; /* Чуть темнее основного фона */
+            flex: 1;
+            background: #F9FAFB;
             border-radius: 15px;
             padding: 15px;
             text-align: center;
@@ -159,7 +159,7 @@
             font-size: 20px;
             margin-bottom: 15px;
             color: #222;
-            text-align: center; /* Выровнял заголовок по центру */
+            text-align: center;
         }
 
         .empty-list {
@@ -178,33 +178,38 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            height: 65px;
+            height: 70px; /* Чуть увеличил высоту */
             background: #fff;
             display: flex;
-            justify-content: space-around;
+            justify-content: space-around; /* Равномерное расстояние */
             align-items: center;
-            border-top: 1px solid #eee;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
-            z-index: 100; /* Чтобы был поверх всего */
+            border-top: 1px solid #f0f0f0;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.03);
+            z-index: 100;
+            padding-bottom: 5px; /* Для айфонов без кнопки */
         }
 
         .tab-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            color: #aaa; /* Серый цвет для неактивных */
+            justify-content: center;
+            color: #ccc; /* Светло-серый для неактивных */
             text-decoration: none;
-            font-size: 12px;
-            padding: 5px;
+            width: 60px;
+            height: 100%;
         }
+        
         .tab-item i {
-            font-size: 28px; /* Увеличил иконки */
-            margin-bottom: 3px;
-        }
-        .tab-item.active {
-            color: #222; /* Черный для активной */
+            font-size: 26px; /* Размер иконок */
+            transition: color 0.2s;
         }
 
+        /* Активная кнопка (Черная) */
+        .tab-item.active {
+            color: #222; 
+        }
+        
     </style>
 </head>
 <body>
@@ -223,11 +228,13 @@
             <svg class="progress-ring" width="140" height="140">
                 <circle class="progress-ring-circle-bg" cx="70" cy="70" r="60" />
                 <circle class="progress-ring-circle" cx="70" cy="70" r="60"
-                        stroke-dasharray="377" stroke-dashoffset="377" /> </svg>
+                        stroke-dasharray="377" stroke-dashoffset="377" />
+            </svg>
             <div class="progress-ring-text">
                 <div class="progress-ring-value" id="calories-remaining">0</div>
                 <div class="progress-ring-label">ккал осталось</div>
-                <i class="bi bi-fire fire-icon-black"></i> </div>
+                <i class="bi bi-fire fire-icon-black"></i>
+            </div>
         </div>
 
         <div class="macros-cards-row">
@@ -245,42 +252,44 @@
             </div>
         </div>
 
-    </div> <div class="recent-section">
+    </div>
+
+    <div class="recent-section">
         <h2>Недавно добавлено</h2>
         <div class="empty-list">
             Список пуст
         </div>
     </div>
 
-
     <div class="tab-bar">
+        
+        <a href="#" class="tab-item active">
+            <i class="bi bi-house-door-fill"></i>
+        </a>
+
         <a href="#" class="tab-item">
             <i class="bi bi-bar-chart-line-fill"></i>
         </a>
-        <a href="#" class="tab-item active">
+
+        <a href="#" class="tab-item">
             <i class="bi bi-person-fill"></i>
         </a>
+
     </div>
 
-
     <script>
-        // Инициализация Telegram Web App
         let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Функция для обновления кольца (заглушка)
         function setProgress(percent) {
             const circle = document.querySelector('.progress-ring-circle');
             const radius = circle.r.baseVal.value;
             const circumference = 2 * Math.PI * radius;
-
             const offset = circumference - (percent / 100 * circumference);
             circle.style.strokeDashoffset = offset;
         }
 
-        // Пример использования: заполнит кольцо на 30% через 1 секунду
         setTimeout(() => setProgress(30), 1000);
-
     </script>
 
 </body>
