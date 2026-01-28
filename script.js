@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', function() {
         safeSetText('consumed-val', consumed);
 
         const remaining = goal - consumed;
-        const remainEl = document.querySelector('.stat-side .stat-val'); // More specific selector
+        const remainEl = document.querySelector('.stat-side .stat-val'); 
         if (remainEl) remainEl.innerText = remaining > 0 ? remaining : 0;
 
         const percent = Math.min((consumed / goal) * 100, 100);
@@ -66,9 +66,14 @@ document.addEventListener('DOMContentLoaded', function() {
             circle.style.strokeDashoffset = offset;
         }
 
-        const protMax = Math.round((goal * 0.3) / 4);
-        const fatMax = Math.round((goal * 0.3) / 9);
-        const carbMax = Math.round((goal * 0.4) / 4);
+        // Лимиты БЖУ (передаются из Python или считаются тут)
+        const p_max_param = urlParams.get('p_max');
+        const f_max_param = urlParams.get('f_max');
+        const c_max_param = urlParams.get('c_max');
+
+        const protMax = p_max_param ? parseInt(p_max_param) : Math.round((goal * 0.3) / 4);
+        const fatMax = f_max_param ? parseInt(f_max_param) : Math.round((goal * 0.3) / 9);
+        const carbMax = c_max_param ? parseInt(c_max_param) : Math.round((goal * 0.4) / 4);
 
         safeSetText('prot-max', protMax);
         safeSetText('fat-max', fatMax);
@@ -86,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function() {
         setBar('fat-bar', fatCur, fatMax);
         setBar('carb-bar', carbCur, carbMax);
 
-        // Render food history from URL
+        // === ОТРИСОВКА ИСТОРИИ ЕДЫ (ИСПРАВЛЕНО) ===
         const foodLogParam = urlParams.get('food_log');
         if (foodLogParam) {
             try {
@@ -95,6 +100,10 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (e) {
                 console.error("Error parsing food log:", e);
             }
+        } else {
+             // Если данных нет, очищаем или пишем пусто
+             const historyList = document.getElementById('food-list');
+             if(historyList) historyList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Пока пусто</p>';
         }
     }
 
@@ -107,32 +116,47 @@ document.addEventListener('DOMContentLoaded', function() {
             if (current > max) {
                 bar.style.setProperty('background', '#ff4b4b', 'important');
             } else {
-                // Remove the !important rule to revert to CSS-defined color
                 bar.style.removeProperty('background');
             }
         }
     }
 
+    // === НОВАЯ ФУНКЦИЯ ОТРИСОВКИ КАРТОЧЕК ===
     function renderFoodHistory(foodLog) {
-        const historyList = document.getElementById('food-history-list');
-        historyList.innerHTML = ''; // Clear previous entries
+        // ВАЖНО: Ищем 'food-list', который мы добавили в HTML в Шаге 2
+        const historyList = document.getElementById('food-list'); 
+        if (!historyList) return;
+        
+        historyList.innerHTML = ''; // Очищаем
+
+        if (foodLog.length === 0) {
+             historyList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Сегодня записей нет</p>';
+             return;
+        }
 
         foodLog.forEach(item => {
-            const historyItem = document.createElement('div');
-            historyItem.className = 'history-item';
+            const card = document.createElement('div');
+            card.className = 'food-card'; // Используем новый класс стилей
 
-            historyItem.innerHTML = `
-                <div class="history-item-header">
-                    <span>${item.name}</span>
-                    <span>${item.calories} ккал</span>
+            // ВАЖНО: Используем item.cal, item.p, item.f, item.c (как в Python)
+            card.innerHTML = `
+                <button class="btn-delete" onclick="deleteFood(${item.id})">
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+
+                <div class="food-header">
+                    <div class="food-name">${item.name}</div>
                 </div>
-                <div class="history-item-macros">
-                    <span>Б: ${item.protein}г</span>
-                    <span>Ж: ${item.fat}г</span>
-                    <span>У: ${item.carbs}г</span>
+
+                <div class="food-calories">${item.cal} ккал</div>
+
+                <div class="food-macros">
+                    <div class="macro-item macro-prot">🥩 <span>${item.p}</span></div>
+                    <div class="macro-item macro-fat">🥑 <span>${item.f}</span></div>
+                    <div class="macro-item macro-carb">🥖 <span>${item.c}</span></div>
                 </div>
             `;
-            historyList.appendChild(historyItem);
+            historyList.appendChild(card);
         });
     }
 
@@ -181,13 +205,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const historyStr = urlParams.get('history') || '0,0,0,0,0,0,0';
         const historyData = historyStr.split(',').map(Number);
 
-        // Get today's index (0=Mon, 6=Sun)
         const todayIndex = (new Date().getDay() + 6) % 7;
+        // Тут берем актуальные данные из currentData
         historyData[todayIndex] = parseInt(currentData.c_cal) || 0;
 
         const labels = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
 
-        if (ctx && !statsChart) { // Check if chart instance exists
+        if (ctx && !statsChart) { 
             statsChart = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -195,15 +219,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     datasets: [{
                         label: 'Калории',
                         data: historyData,
-                        borderColor: 'var(--primary)',
-                        backgroundColor: 'rgba(128, 203, 196, 0.2)',
+                        borderColor: '#4CAF50', // Зеленый цвет как в дизайне
+                        backgroundColor: 'rgba(76, 175, 80, 0.2)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4,
-                        pointBackgroundColor: 'var(--primary)',
+                        pointBackgroundColor: '#4CAF50',
                         pointBorderColor: '#fff',
-                        pointHoverRadius: 7,
-                        pointHoverBorderWidth: 2
+                        pointHoverRadius: 7
                     }]
                 },
                 options: {
@@ -212,107 +235,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     scales: {
                         y: {
                             beginAtZero: true,
-                            grid: { color: '#f0f0f0' },
-                            ticks: { color: 'var(--text-light)' }
+                            grid: { color: '#f0f0f0' }
                         },
                         x: {
-                            grid: { display: false },
-                            ticks: { color: 'var(--text-light)' }
+                            grid: { display: false }
                         }
                     },
                     plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: '#333',
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 12 },
-                            padding: 10,
-                            cornerRadius: 8
-                        }
+                        legend: { display: false }
                     }
                 }
             });
         }
     }
 
-    // Initialize chart if stats tab is active on load
     if (document.getElementById('stats').classList.contains('active')) {
         initStatsChart();
     }
 });
 
-/* ==========================================
-   ЛОГИКА ИСТОРИИ ПИТАНИЯ (Добавлено в Шаге 4)
-   ========================================== */
-
-// 1. Читаем данные о еде из ссылки
-const urlParamsForFood = new URLSearchParams(window.location.search);
-const foodLogRaw = urlParamsForFood.get('food_log');
-
-// 2. Функция отрисовки карточек
-function renderFoodList() {
-    const listContainer = document.getElementById('food-list');
-
-    // Если данных нет — пишем "Пусто"
-    if (!foodLogRaw) {
-        listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Пока пусто</p>';
-        return;
-    }
-
-    try {
-        // Декодируем (превращаем %20 и каракули обратно в текст и JSON)
-        const foodList = JSON.parse(decodeURIComponent(foodLogRaw));
-
-        if (foodList.length === 0) {
-             listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Список пуст</p>';
-             return;
-        }
-
-        listContainer.innerHTML = ''; // Чистим контейнер перед отрисовкой
-
-        // Создаем карточку для каждого блюда
-        foodList.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'food-card'; // Применяем наш пастельный стиль
-
-            card.innerHTML = `
-                <button class="btn-delete" onclick="deleteFood(${item.id})">
-                    🗑
-                </button>
-
-                <div class="food-header">
-                    <div class="food-name">${item.name}</div>
-                </div>
-
-                <div class="food-calories">${item.cal} ккал</div>
-
-                <div class="food-macros">
-                    <div class="macro-item macro-prot">🥩 <span>${item.p}</span></div>
-                    <div class="macro-item macro-fat">🥑 <span>${item.f}</span></div>
-                    <div class="macro-item macro-carb">🥖 <span>${item.c}</span></div>
-                </div>
-            `;
-            listContainer.appendChild(card);
-        });
-
-    } catch (e) {
-        console.error("Ошибка разбора еды:", e);
-    }
-}
-
-// 3. Запускаем отрисовку сразу при загрузке страницы
-renderFoodList();
-
-// 4. Функция удаления (срабатывает при нажатии на 🗑)
-function deleteFood(id) {
-    // Спрашиваем подтверждение
+// ==========================================
+// 6. ФУНКЦИЯ УДАЛЕНИЯ (ГЛОБАЛЬНАЯ)
+// ==========================================
+// Мы вынесли её из DOMContentLoaded, чтобы HTML видел её
+window.deleteFood = function(id) {
     if (confirm('Удалить эту запись?')) {
-        // Формируем данные для бота
         const data = JSON.stringify({
             action: 'delete_food',
             id: id
         });
-        // Отправляем данные боту (это закроет окно Mini App)
-        Telegram.WebApp.sendData(data);
+        if (window.Telegram && window.Telegram.WebApp) {
+             window.Telegram.WebApp.sendData(data);
+        } else {
+             console.log("Telegram WebApp not found, data to send:", data);
+        }
     }
-}
+};
