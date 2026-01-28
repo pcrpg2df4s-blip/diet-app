@@ -10,19 +10,31 @@
         /* === Глобальные стили === */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #F5F7FA; /* Светлый фон */
-            color: #333; /* Темный текст */
+            background-color: #F5F7FA;
+            color: #333;
             margin: 0;
             padding: 20px;
-            padding-bottom: 90px; /* Увеличил отступ снизу, чтобы контент не перекрывался меню */
+            padding-bottom: 90px;
             box-sizing: border-box;
         }
 
-        h1, h2 {
-            margin-top: 0;
+        h1, h2, h3 { margin-top: 0; }
+        
+        /* Утилита для скрытия страниц */
+        .page-section {
+            display: none; /* По умолчанию всё скрыто */
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .page-section.active {
+            display: block; /* Показываем только активную */
         }
 
-        /* === Календарь (Верхняя панель) === */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === Календарь === */
         .calendar-strip {
             display: flex;
             justify-content: space-between;
@@ -38,25 +50,15 @@
             border-radius: 10px;
             color: #aaa;
         }
-        .day-item.active {
-            background: #222; /* Черный для активного дня */
-            color: #fff;
-        }
-        .day-name {
-            font-size: 12px;
-            text-transform: uppercase;
-        }
-        .day-date {
-            font-size: 20px;
-            font-weight: bold;
-            margin-top: 5px;
-        }
+        .day-item.active { background: #222; color: #fff; }
+        .day-name { font-size: 12px; text-transform: uppercase; }
+        .day-date { font-size: 20px; font-weight: bold; margin-top: 5px; }
 
-        /* === Основной блок: Кольцо Калорий и Статистика === */
+        /* === Главная статистика === */
         .main-stats-container {
             display: flex;
             flex-direction: column;
-            align-items: center; /* Центрируем все элементы по горизонтали */
+            align-items: center;
             background: #fff;
             border-radius: 20px;
             padding: 30px 20px;
@@ -64,222 +66,197 @@
             margin-bottom: 25px;
         }
 
-        /* === Кольцо Прогресса (Калории) === */
+        /* Кольцо */
         .progress-ring-container {
             position: relative;
-            width: 140px; /* Размер кольца */
+            width: 140px;
             height: 140px;
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 20px; /* Отступ от кольца до карточек */
+            margin-bottom: 20px;
         }
-
-        /* SVG Кольца */
-        .progress-ring-circle-bg {
-            fill: none;
-            stroke: #eee; /* Серый фон кольца */
-            stroke-width: 8; /* Толщина линии */
-        }
+        .progress-ring-circle-bg { fill: none; stroke: #eee; stroke-width: 8; }
         .progress-ring-circle {
-            fill: none;
-            stroke: #222; /* Черный цвет прогресса */
-            stroke-width: 8;
-            stroke-linecap: round; /* Закругленные концы */
-            transform: rotate(-90deg); /* Начинаем сверху */
-            transform-origin: 50% 50%;
+            fill: none; stroke: #222; stroke-width: 8;
+            stroke-linecap: round;
+            transform: rotate(-90deg); transform-origin: 50% 50%;
             transition: stroke-dashoffset 0.5s;
         }
-
-        /* Текст внутри кольца */
         .progress-ring-text {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            font-family: sans-serif;
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%); text-align: center;
         }
-        .progress-ring-value {
-            font-size: 32px;
-            font-weight: bold;
-            color: #222;
-            line-height: 1;
-        }
-        .progress-ring-label {
-            font-size: 14px;
-            color: #999;
-            margin-top: 5px;
-        }
+        .progress-ring-value { font-size: 32px; font-weight: bold; color: #222; line-height: 1; }
+        .progress-ring-label { font-size: 14px; color: #999; margin-top: 5px; }
+        .fire-icon-black { font-size: 24px; color: #222; margin-top: 5px; }
 
-        /* Черная иконка огня */
-        .fire-icon-black {
-            font-size: 24px;
-            color: #222;
-            margin-top: 5px;
-        }
-
-
-        /* === Карточки Макронутриентов (Белки, Жиры, Углеводы) === */
-        .macros-cards-row {
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            gap: 10px;
-        }
-
+        /* Макросы */
+        .macros-cards-row { display: flex; justify-content: space-between; width: 100%; gap: 10px; }
         .macro-card {
-            flex: 1;
-            background: #F9FAFB;
-            border-radius: 15px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+            flex: 1; background: #F9FAFB; border-radius: 15px;
+            padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03);
         }
+        .macro-card h3 { font-size: 14px; margin: 0 0 5px 0; color: #666; }
+        .macro-value { font-size: 18px; font-weight: bold; color: #222; }
+        .macro-unit { font-size: 12px; color: #999; }
 
-        .macro-card h3 {
-            font-size: 16px;
-            margin: 0 0 5px 0;
-            color: #666;
+        /* === Стили для ПРОФИЛЯ === */
+        .profile-header {
+            text-align: center; margin-bottom: 20px;
         }
-        .macro-value {
-            font-size: 20px;
-            font-weight: bold;
-            color: #222;
-            margin-bottom: 5px;
+        .profile-avatar {
+            width: 80px; height: 80px; background: #eee;
+            border-radius: 50%; margin: 0 auto 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 30px; color: #999;
         }
-        .macro-unit {
-            font-size: 12px;
-            color: #999;
+        .profile-card {
+            background: #fff; padding: 20px; border-radius: 15px;
+            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
-
-
-        /* === Секция "Недавно добавлено" === */
-        .recent-section h2 {
-            font-size: 20px;
-            margin-bottom: 15px;
-            color: #222;
-            text-align: center;
+        .profile-row {
+            display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;
         }
+        .profile-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .profile-label { color: #888; }
+        .profile-val { font-weight: bold; color: #222; }
 
-        .empty-list {
-            text-align: center;
-            color: #aaa;
-            padding: 20px;
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-        }
-
-
-        /* === Нижняя панель навигации (Таббар) === */
+        /* === Нижняя панель === */
         .tab-bar {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 70px; /* Чуть увеличил высоту */
-            background: #fff;
-            display: flex;
-            justify-content: space-around; /* Равномерное расстояние */
-            align-items: center;
-            border-top: 1px solid #f0f0f0;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.03);
-            z-index: 100;
-            padding-bottom: 5px; /* Для айфонов без кнопки */
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
+            background: #fff; display: flex; justify-content: space-around;
+            align-items: center; border-top: 1px solid #f0f0f0;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.03); z-index: 100;
+            padding-bottom: 5px;
         }
-
         .tab-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: #ccc; /* Светло-серый для неактивных */
-            text-decoration: none;
-            width: 60px;
-            height: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; color: #ccc; text-decoration: none;
+            width: 60px; height: 100%; cursor: pointer;
         }
-        
-        .tab-item i {
-            font-size: 26px; /* Размер иконок */
-            transition: color 0.2s;
-        }
+        .tab-item i { font-size: 26px; transition: all 0.2s; }
+        .tab-item.active { color: #222; }
+        .tab-item.active i { transform: scale(1.1); }
 
-        /* Активная кнопка (Черная) */
-        .tab-item.active {
-            color: #222; 
-        }
-        
     </style>
 </head>
 <body>
 
-    <div class="calendar-strip">
-        <div class="day-item"><div class="day-name">ПН</div><div class="day-date">26</div></div>
-        <div class="day-item"><div class="day-name">ВТ</div><div class="day-date">27</div></div>
-        <div class="day-item active"><div class="day-name">СР</div><div class="day-date">28</div></div>
-        <div class="day-item"><div class="day-name">ЧТ</div><div class="day-date">29</div></div>
-        <div class="day-item"><div class="day-name">ПТ</div><div class="day-date">30</div></div>
-    </div>
+    <div id="page-home" class="page-section active">
+        <div class="calendar-strip">
+            <div class="day-item"><div class="day-name">ПН</div><div class="day-date">26</div></div>
+            <div class="day-item"><div class="day-name">ВТ</div><div class="day-date">27</div></div>
+            <div class="day-item active"><div class="day-name">СР</div><div class="day-date">28</div></div>
+            <div class="day-item"><div class="day-name">ЧТ</div><div class="day-date">29</div></div>
+            <div class="day-item"><div class="day-name">ПТ</div><div class="day-date">30</div></div>
+        </div>
 
-    <div class="main-stats-container">
+        <div class="main-stats-container">
+            <div class="progress-ring-container">
+                <svg class="progress-ring" width="140" height="140">
+                    <circle class="progress-ring-circle-bg" cx="70" cy="70" r="60" />
+                    <circle class="progress-ring-circle" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="377" />
+                </svg>
+                <div class="progress-ring-text">
+                    <div class="progress-ring-value" id="calories-remaining">0</div>
+                    <div class="progress-ring-label">ккал осталось</div>
+                    <i class="bi bi-fire fire-icon-black"></i>
+                </div>
+            </div>
 
-        <div class="progress-ring-container">
-            <svg class="progress-ring" width="140" height="140">
-                <circle class="progress-ring-circle-bg" cx="70" cy="70" r="60" />
-                <circle class="progress-ring-circle" cx="70" cy="70" r="60"
-                        stroke-dasharray="377" stroke-dashoffset="377" />
-            </svg>
-            <div class="progress-ring-text">
-                <div class="progress-ring-value" id="calories-remaining">0</div>
-                <div class="progress-ring-label">ккал осталось</div>
-                <i class="bi bi-fire fire-icon-black"></i>
+            <div class="macros-cards-row">
+                <div class="macro-card"><h3>Белки</h3><div class="macro-value" id="protein-val">0<span class="macro-unit">г</span></div></div>
+                <div class="macro-card"><h3>Углеводы</h3><div class="macro-value" id="carbs-val">0<span class="macro-unit">г</span></div></div>
+                <div class="macro-card"><h3>Жиры</h3><div class="macro-value" id="fats-val">0<span class="macro-unit">г</span></div></div>
             </div>
         </div>
 
-        <div class="macros-cards-row">
-            <div class="macro-card">
-                <h3>Белки</h3>
-                <div class="macro-value" id="protein-val">0<span class="macro-unit">г</span></div>
-            </div>
-            <div class="macro-card">
-                <h3>Углеводы</h3>
-                <div class="macro-value" id="carbs-val">0<span class="macro-unit">г</span></div>
-            </div>
-            <div class="macro-card">
-                <h3>Жиры</h3>
-                <div class="macro-value" id="fats-val">0<span class="macro-unit">г</span></div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="recent-section">
-        <h2>Недавно добавлено</h2>
-        <div class="empty-list">
-            Список пуст
+        <div style="text-align:center; color:#222; margin-top:20px;">
+            <h3>Недавно добавлено</h3>
+            <div style="color:#aaa; background:#fff; padding:20px; border-radius:15px;">Список пуст</div>
         </div>
     </div>
+
+
+    <div id="page-stats" class="page-section">
+        <h2 style="text-align:center; margin-top:20px;">Ваш Прогресс</h2>
+        <div style="background:#fff; padding:40px 20px; text-align:center; border-radius:20px; color:#999;">
+            <i class="bi bi-bar-chart-line" style="font-size:40px; margin-bottom:10px; display:block;"></i>
+            Графики появятся здесь,<br>когда будет больше данных
+        </div>
+    </div>
+
+
+    <div id="page-profile" class="page-section">
+        <div class="profile-header">
+            <div class="profile-avatar"><i class="bi bi-person"></i></div>
+            <h2 id="user-name">Пользователь</h2>
+            <p style="color:#999;" id="user-id">ID: ...</p>
+        </div>
+
+        <div class="profile-card">
+            <div class="profile-row"><span class="profile-label">Возраст</span><span class="profile-val" id="p-age">-</span></div>
+            <div class="profile-row"><span class="profile-label">Рост</span><span class="profile-val" id="p-height">-</span></div>
+            <div class="profile-row"><span class="profile-label">Вес</span><span class="profile-val" id="p-weight">-</span></div>
+        </div>
+
+        <div class="profile-card">
+            <div class="profile-row"><span class="profile-label">Цель</span><span class="profile-val">Похудение</span></div>
+            <div class="profile-row"><span class="profile-label">Активность</span><span class="profile-val">Средняя</span></div>
+        </div>
+    </div>
+
 
     <div class="tab-bar">
-        
-        <a href="#" class="tab-item active">
+        <div class="tab-item active" onclick="switchTab('home', this)">
             <i class="bi bi-house-door-fill"></i>
-        </a>
-
-        <a href="#" class="tab-item">
+        </div>
+        <div class="tab-item" onclick="switchTab('stats', this)">
             <i class="bi bi-bar-chart-line-fill"></i>
-        </a>
-
-        <a href="#" class="tab-item">
+        </div>
+        <div class="tab-item" onclick="switchTab('profile', this)">
             <i class="bi bi-person-fill"></i>
-        </a>
-
+        </div>
     </div>
 
     <script>
         let tg = window.Telegram.WebApp;
         tg.expand();
+
+        // 1. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК
+        function switchTab(tabName, element) {
+            // Скрываем все страницы
+            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+            // Убираем подсветку у всех кнопок
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+
+            // Показываем нужную страницу
+            document.getElementById('page-' + tabName).classList.add('active');
+            // Подсвечиваем нажатую кнопку
+            element.classList.add('active');
+        }
+
+        // 2. ЗАПОЛНЕНИЕ ДАННЫХ (Симуляция + Подготовка)
+        function loadData() {
+            // Получаем данные из Телеграм (если есть)
+            const user = tg.initDataUnsafe.user;
+            
+            if (user) {
+                document.getElementById('user-name').innerText = user.first_name + (user.last_name ? " " + user.last_name : "");
+                document.getElementById('user-id').innerText = "ID: " + user.id;
+            }
+
+            // === ЗДЕСЬ БУДЕТ ЗАГРУЗКА ИЗ БОТА ===
+            // Пока ставим заглушку, как было в твоем примере:
+            // 18 лет, 185 см, 78 кг (твои данные)
+            document.getElementById('p-age').innerText = "18 лет";
+            document.getElementById('p-height').innerText = "185 см";
+            document.getElementById('p-weight').innerText = "78 кг";
+
+            // Симуляция заполнения кольца (пока нет связи с python)
+            setTimeout(() => setProgress(0), 500); // Пока 0, так как данных нет
+        }
 
         function setProgress(percent) {
             const circle = document.querySelector('.progress-ring-circle');
@@ -289,8 +266,9 @@
             circle.style.strokeDashoffset = offset;
         }
 
-        setTimeout(() => setProgress(30), 1000);
-    </script>
+        // Запускаем при старте
+        loadData();
 
+    </script>
 </body>
 </html>
