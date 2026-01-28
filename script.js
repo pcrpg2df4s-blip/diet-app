@@ -240,3 +240,79 @@ document.addEventListener('DOMContentLoaded', function() {
         initStatsChart();
     }
 });
+
+/* ==========================================
+   ЛОГИКА ИСТОРИИ ПИТАНИЯ (Добавлено в Шаге 4)
+   ========================================== */
+
+// 1. Читаем данные о еде из ссылки
+const urlParamsForFood = new URLSearchParams(window.location.search);
+const foodLogRaw = urlParamsForFood.get('food_log');
+
+// 2. Функция отрисовки карточек
+function renderFoodList() {
+    const listContainer = document.getElementById('food-list');
+
+    // Если данных нет — пишем "Пусто"
+    if (!foodLogRaw) {
+        listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Пока пусто</p>';
+        return;
+    }
+
+    try {
+        // Декодируем (превращаем %20 и каракули обратно в текст и JSON)
+        const foodList = JSON.parse(decodeURIComponent(foodLogRaw));
+
+        if (foodList.length === 0) {
+             listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Список пуст</p>';
+             return;
+        }
+
+        listContainer.innerHTML = ''; // Чистим контейнер перед отрисовкой
+
+        // Создаем карточку для каждого блюда
+        foodList.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'food-card'; // Применяем наш пастельный стиль
+
+            card.innerHTML = `
+                <button class="btn-delete" onclick="deleteFood(${item.id})">
+                    🗑
+                </button>
+
+                <div class="food-header">
+                    <div class="food-name">${item.name}</div>
+                </div>
+
+                <div class="food-calories">${item.cal} ккал</div>
+
+                <div class="food-macros">
+                    <div class="macro-item macro-prot">🥩 <span>${item.p}</span></div>
+                    <div class="macro-item macro-fat">🥑 <span>${item.f}</span></div>
+                    <div class="macro-item macro-carb">🥖 <span>${item.c}</span></div>
+                </div>
+            `;
+            listContainer.appendChild(card);
+        });
+
+    } catch (e) {
+        console.error("Ошибка разбора еды:", e);
+    }
+}
+
+// 3. Запускаем отрисовку сразу при загрузке страницы
+renderFoodList();
+
+// 4. Функция удаления (срабатывает при нажатии на 🗑)
+function deleteFood(id) {
+    // Спрашиваем подтверждение
+    if (confirm('Удалить эту запись?')) {
+        // Формируем данные для бота
+        const data = JSON.stringify({
+            action: 'delete_food',
+            id: id
+        });
+        // Отправляем данные боту (это закроет окно Mini App)
+        Telegram.WebApp.sendData(data);
+    }
+}
