@@ -1,56 +1,32 @@
-/* ==========================================
-   ДИАГНОСТИЧЕСКАЯ ВЕРСИЯ SCRIPT.JS
-   ========================================== */
-
-// 1. Глобальная функция удаления с ПРОВЕРКАМИ
-window.deleteFood = function(id) {
-    // Этап 1: Проверка клика
-    alert("ЭТАП 1: Функция вызвана. ID еды: " + id);
-
-    if (!confirm('Точно удалить?')) return;
-
-    // Этап 2: Проверка библиотеки Телеграм
+// 1. ИНИЦИАЛИЗАЦИЯ ТЕЛЕГРАМА
+let tg = null;
+try {
     if (window.Telegram && window.Telegram.WebApp) {
-        alert("ЭТАП 2: Телеграм найден!");
-        
-        try {
-            const tg = window.Telegram.WebApp;
-            
-            // Этап 3: Подготовка данных
-            const data = JSON.stringify({
-                action: 'delete_food',
-                id: id
-            });
-            alert("ЭТАП 3: Данные готовы: " + data);
-
-            // Этап 4: Отправка
-            tg.sendData(data);
-            alert("ЭТАП 4: Данные отправлены! (Если окно не закроется, значит бот их не принял)");
-            
-            // Принудительное закрытие
-            tg.close();
-
-        } catch (e) {
-            alert("ОШИБКА выполнения: " + e.message);
-        }
-    } else {
-        alert("ОШИБКА: Скрипт Телеграма НЕ ПОДКЛЮЧЕН в index.html!");
+        tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
     }
+} catch (e) { console.error(e); }
+
+// 2. ФУНКЦИЯ УДАЛЕНИЯ
+window.deleteFood = function(id) {
+    if (!confirm('Удалить эту запись?')) return;
+
+    if (!tg) {
+        alert("Ошибка: Запустите через Телеграм!");
+        return;
+    }
+
+    // Отправляем данные боту
+    const data = JSON.stringify({ action: 'delete_food', id: id });
+    tg.sendData(data);
 };
 
+// 3. ОСНОВНОЙ КОД
 document.addEventListener('DOMContentLoaded', function() {
-    
-    // --- Инициализация Телеграма (для расширения окна) ---
-    try {
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-            window.Telegram.WebApp.expand();
-        }
-    } catch (e) { console.log(e); }
-
     const urlParams = new URLSearchParams(window.location.search);
     
-    // --- Сбор данных ---
+    // Сбор данных
     let currentData = {
         calories: urlParams.get('calories') || "2500",
         name: decodeURI(urlParams.get('name') || "Гость"),
@@ -64,10 +40,10 @@ document.addEventListener('DOMContentLoaded', function() {
         c_carb: urlParams.get('c_carb') || "0"
     };
 
-    // --- UI ---
+    // UI Функции
     function safeSetText(id, text) {
         const el = document.getElementById(id);
-        if (el) el.innerText = text;
+        if(el) el.innerText = text;
     }
 
     function updateUI() {
@@ -93,122 +69,87 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // БЖУ
-        const p_max = urlParams.get('p_max') || Math.round((goal * 0.3) / 4);
-        const f_max = urlParams.get('f_max') || Math.round((goal * 0.3) / 9);
-        const c_max = urlParams.get('c_max') || Math.round((goal * 0.4) / 4);
-        const p_cur = parseInt(currentData.c_prot) || 0;
-        const f_cur = parseInt(currentData.c_fat) || 0;
-        const c_cur = parseInt(currentData.c_carb) || 0;
-
-        safeSetText('prot-val', p_cur); safeSetText('prot-max', p_max);
-        safeSetText('fat-val', f_cur);  safeSetText('fat-max', f_max);
-        safeSetText('carb-val', c_cur); safeSetText('carb-max', c_max);
-        setBar('prot-bar', p_cur, p_max);
-        setBar('fat-bar', f_cur, f_max);
-        setBar('carb-bar', c_cur, c_max);
+        const p_max = urlParams.get('p_max') || Math.round((goal * 0.3)/4);
+        const f_max = urlParams.get('f_max') || Math.round((goal * 0.3)/9);
+        const c_max = urlParams.get('c_max') || Math.round((goal * 0.4)/4);
         
-        // Список еды
-        const foodLogParam = urlParams.get('food_log');
-        renderFoodList(foodLogParam);
+        safeSetText('prot-val', currentData.c_prot || 0); safeSetText('prot-max', p_max);
+        safeSetText('fat-val', currentData.c_fat || 0);  safeSetText('fat-max', f_max);
+        safeSetText('carb-val', currentData.c_carb || 0); safeSetText('carb-max', c_max);
+        
+        setBar('prot-bar', currentData.c_prot, p_max);
+        setBar('fat-bar', currentData.c_fat, f_max);
+        setBar('carb-bar', currentData.c_carb, c_max);
+
+        renderFoodList(urlParams.get('food_log'));
     }
 
-    function setBar(id, current, max) {
+    function setBar(id, cur, max) {
         const bar = document.getElementById(id);
-        if (bar) {
-            const percent = max > 0 ? Math.min((current / max) * 100, 100) : 0;
-            bar.style.width = `${percent}%`;
-            if (current > max) bar.style.setProperty('background', '#ff4b4b', 'important');
+        if(bar) {
+            const pct = max > 0 ? Math.min((cur/max)*100, 100) : 0;
+            bar.style.width = `${pct}%`;
+            if(cur > max) bar.style.setProperty('background', '#ff4b4b', 'important');
             else bar.style.removeProperty('background');
         }
     }
 
-    function renderFoodList(foodLogRaw) {
-        const listContainer = document.getElementById('food-list');
-        if (!listContainer) return;
-
-        if (!foodLogRaw) {
-            listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Пока пусто</p>';
-            return;
-        }
-
+    function renderFoodList(raw) {
+        const con = document.getElementById('food-list');
+        if(!con) return;
+        if(!raw) { con.innerHTML = '<p style="text-align:center;color:#888;margin-top:20px">Пусто</p>'; return; }
+        
         try {
-            const foodList = JSON.parse(decodeURIComponent(foodLogRaw));
-            if (foodList.length === 0) {
-                 listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Сегодня записей нет</p>';
-                 return;
-            }
-            listContainer.innerHTML = ''; 
-
-            foodList.forEach(item => {
+            const list = JSON.parse(decodeURIComponent(raw));
+            if(list.length===0) { con.innerHTML='<p style="text-align:center;color:#888;margin-top:20px">Нет записей</p>'; return; }
+            
+            con.innerHTML = '';
+            list.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'food-card';
                 card.innerHTML = `
-                    <button class="btn-delete" onclick="deleteFood(${item.id})">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+                    <button class="btn-delete" onclick="deleteFood(${item.id})"><i class="fa-solid fa-trash"></i></button>
                     <div class="food-header"><div class="food-name">${item.name}</div></div>
                     <div class="food-calories">${item.cal} ккал</div>
                     <div class="food-macros">
                         <div class="macro-item macro-prot">🥩 <span>${item.p}</span></div>
                         <div class="macro-item macro-fat">🥑 <span>${item.f}</span></div>
                         <div class="macro-item macro-carb">🥖 <span>${item.c}</span></div>
-                    </div>
-                `;
-                listContainer.appendChild(card);
+                    </div>`;
+                con.appendChild(card);
             });
-        } catch (e) { console.error(e); }
+        } catch(e) { console.error(e); }
     }
 
     updateUI();
 
-    // Навигация и График
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            navItems.forEach(nav => nav.classList.remove('active'));
-            document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-            item.classList.add('active');
-            const targetId = item.getAttribute('href').substring(1);
-            document.getElementById(targetId).classList.add('active');
-            if (targetId === 'stats') initStatsChart();
-        });
-    });
-
-    let statsChart = null;
-    function initStatsChart() {
-        const ctx = document.getElementById('caloriesChart');
-        if (!ctx) return;
+    // График
+    const ctx = document.getElementById('caloriesChart');
+    if(ctx && document.getElementById('stats')) {
+        const hist = (urlParams.get('history')||'0,0,0,0,0,0,0').split(',').map(Number);
+        hist[(new Date().getDay()+6)%7] = parseInt(currentData.c_cal)||0;
         
-        const historyStr = urlParams.get('history') || '0,0,0,0,0,0,0';
-        const historyData = historyStr.split(',').map(Number);
-        const todayIndex = (new Date().getDay() + 6) % 7;
-        historyData[todayIndex] = parseInt(currentData.c_cal) || 0;
-
-        if (!statsChart) { 
-            statsChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'],
-                    datasets: [{
-                        label: 'Калории',
-                        data: historyData,
-                        borderColor: '#4CAF50',
-                        backgroundColor: 'rgba(76, 175, 80, 0.2)',
-                        borderWidth: 3,
-                        fill: true,
-                        tension: 0.4,
-                        pointBackgroundColor: '#4CAF50'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { beginAtZero: true }, x: { grid: { display: false } } },
-                    plugins: { legend: { display: false } }
-                }
-            });
-        }
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['ПН','ВТ','СР','ЧТ','ПТ','СБ','ВС'],
+                datasets: [{
+                    data: hist,
+                    borderColor: '#4CAF50',
+                    backgroundColor: 'rgba(76, 175, 80, 0.2)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { plugins:{legend:{display:false}}, scales:{x:{grid:{display:false}}, y:{beginAtZero:true}} }
+        });
     }
-    if (document.getElementById('stats').classList.contains('active')) initStatsChart();
+
+    // Навигация
+    document.querySelectorAll('.nav-item').forEach(i => i.addEventListener('click', e => {
+        e.preventDefault();
+        document.querySelectorAll('.nav-item, .content-section').forEach(x => x.classList.remove('active'));
+        i.classList.add('active');
+        document.getElementById(i.getAttribute('href').substring(1)).classList.add('active');
+    }));
 });

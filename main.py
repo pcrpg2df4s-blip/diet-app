@@ -19,6 +19,7 @@ from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
 import time
 from urllib.parse import quote
+from aiogram.types import ContentType # <-- Вот этого, скорее всего, нет
 
 from aiogram import Bot, Dispatcher, F, Router, html
 from aiogram.client.default import DefaultBotProperties
@@ -299,30 +300,33 @@ import sqlite3 # Не забудь этот импорт наверху
 from aiogram.enums import ParseMode # И этот для HTML
 
 # === НОВЫЙ ХЕНДЛЕР ДЛЯ УДАЛЕНИЯ ЕДЫ (ШАГ 5) ===
+# === ХЕНДЛЕР УДАЛЕНИЯ ЕДЫ (ИСПРАВЛЕННЫЙ) ===
+# Мы говорим боту: лови ЛЮБОЕ сообщение, у которого тип content_type = WEB_APP_DATA
+# === ХЕНДЛЕР УДАЛЕНИЯ ЕДЫ (ИСПРАВЛЕННЫЙ) ===
+# F.web_app_data ловит сообщения, в которых есть данные из Mini App
 @router.message(F.web_app_data)
 async def handle_web_app_data(message: Message, state: FSMContext):
+    print(f"🔔 СИГНАЛ ПОЛУЧЕН! Данные: {message.web_app_data.data}")
+    
     try:
-        # Читаем данные, которые прислал сайт
         data = json.loads(message.web_app_data.data)
-        
-        # Если это команда на удаление
+
         if data.get('action') == 'delete_food':
             food_id = data.get('id')
             user_id = message.from_user.id
             
             async with aiosqlite.connect(DB_NAME) as db:
-                # 1. Узнаем, сколько калорий было в этой еде (чтобы вернуть их)
+                # 1. Узнаем калории удаляемой еды
                 async with db.execute("SELECT calories, proteins, fats, carbs FROM food_log WHERE id = ?", (food_id,)) as cursor:
                     row = await cursor.fetchone()
                 
                 if row:
                     cal, prot, fat, carb = row
                     
-                    # 2. Удаляем запись из лога
+                    # 2. Удаляем из лога
                     await db.execute("DELETE FROM food_log WHERE id = ?", (food_id,))
                     
-                    # 3. Вычитаем эти калории из съеденного сегодня (возвращаем лимит)
-                    # Используем MAX(0, ...), чтобы случайно не уйти в минус
+                    # 3. Возвращаем калории пользователю (вычитаем из "съеденного")
                     await db.execute("""
                         UPDATE users 
                         SET consumed_calories = MAX(0, consumed_calories - ?),
@@ -332,7 +336,7 @@ async def handle_web_app_data(message: Message, state: FSMContext):
                         WHERE user_id = ?
                     """, (cal, prot, fat, carb, user_id))
                     
-                    # 4. Обновляем график (nutrition_history)
+                    # 4. Обновляем график
                     today = date.today().isoformat()
                     await db.execute("""
                         UPDATE nutrition_history
@@ -342,16 +346,16 @@ async def handle_web_app_data(message: Message, state: FSMContext):
                     
                     await db.commit()
                     
-                    await message.answer(f"🗑 <b>Удалено!</b>\nКалории ({int(cal)}) возвращены в лимит.", parse_mode="HTML")
+                    # Ответ пользователю
+                    await message.answer(f"🗑 <b>Удалено!</b>\nКалории ({int(cal)}) возвращены.", parse_mode="HTML")
                     
-                    # 5. Самое важное: Обновляем кнопку меню, чтобы там удалилась еда
+                    # Обновляем кнопку меню
                     await cmd_start(message, state)
-                    
                 else:
-                    await message.answer("⚠️ Не удалось найти эту запись (возможно, она уже удалена).")
+                    await message.answer("⚠️ Запись не найдена (возможно, уже удалена).")
                     
     except Exception as e:
-        print(f"Ошибка при обработке данных из WebApp: {e}")
+        print(f"❌ Ошибка Python: {e}")
 
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
