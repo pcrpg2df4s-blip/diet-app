@@ -267,17 +267,18 @@ async def get_current_week_history(user_id):
 async def get_today_food_json(user_id):
     today = date.today().isoformat()
     food_list = []
-
+    
     async with aiosqlite.connect(DB_NAME) as db:
-        # Берем id, имя, калории, бжу и дату
+        # Добавили LIMIT 3 в конец запроса 👇
         async with db.execute("""
             SELECT id, food_name, calories, proteins, fats, carbs 
             FROM food_log 
             WHERE user_id = ? AND date = ?
             ORDER BY id DESC
+            LIMIT 3
         """, (user_id, today)) as cursor:
             rows = await cursor.fetchall()
-
+            
             for row in rows:
                 food_list.append({
                     "id": row[0],
@@ -287,8 +288,7 @@ async def get_today_food_json(user_id):
                     "f": int(row[4]),
                     "c": int(row[5])
                 })
-
-    # Превращаем список в строку JSON
+    
     return json.dumps(food_list, ensure_ascii=False)
 
 # --- ОБРАБОТЧИКИ (HANDLERS) ---

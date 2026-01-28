@@ -26,6 +26,14 @@ window.deleteFood = function(id) {
 document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     
+if (window.Telegram && window.Telegram.WebApp) {
+        const user = window.Telegram.WebApp.initDataUnsafe?.user;
+        if (user && user.photo_url) {
+            const avatarImg = document.querySelector('.avatar img');
+            if (avatarImg) avatarImg.src = user.photo_url;
+        }
+    }
+
     // Сбор данных
     let currentData = {
         calories: urlParams.get('calories') || "2500",
