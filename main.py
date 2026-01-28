@@ -20,9 +20,6 @@ from aiogram import F
 import time
 from urllib.parse import quote
 from aiogram.types import ContentType # <-- Вот этого, скорее всего, нет
-from dotenv import load_dotenv  # <--- Добавь это (библиотека для чтения .env)
-import os
-
 
 from aiogram import Bot, Dispatcher, F, Router, html
 from aiogram.client.default import DefaultBotProperties
@@ -40,30 +37,26 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 import google.generativeai as genai
 from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from aiogram.types import FSInputFile
+import os
+from dotenv import load_dotenv
 
+# --- КОНФИГУРАЦИЯ ---
 load_dotenv()
 
-# 2. Достаем ключи (теперь их не видно в коде!)
+# 2. Создаем переменную BOT_TOKEN (которую ищет твой код внизу)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-# Проверка на всякий случай
-if not BOT_TOKEN or not GOOGLE_API_KEY:
-    print("❌ ОШИБКА: Не найдены ключи в файле .env!")
+# Проверка, чтобы не гадать
+if not BOT_TOKEN:
+    print("❌ ОШИБКА: BOT_TOKEN не найден в .env")
     exit()
 
-# 3. Настраиваем Gemini и Бота
+# Настройка Gemini
 genai.configure(api_key=GOOGLE_API_KEY)
-bot = Bot(token=BOT_TOKEN)
+model = genai.GenerativeModel('gemini-2.0-flash-lite') # Используем быструю модель с поддержкой фото
 
-# --- 👇 ВОТ ЭТО ВАЖНО ОСТАВИТЬ ПОСЛЕ ВСТАВКИ 👇 ---
-
-# Диспетчер (он у тебя был, убедись что он есть)
-dp = Dispatcher()
-
-# Модель (мы договорились использовать эту, она у тебя работает)
-model = genai.GenerativeModel("gemini-2.0-flash-lite")
-
+# Ссылка на логотип (заглушка, замените на свою или отправляйте локальный файл)
 LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3063/3063822.png" 
 
 # --- БАЗА ДАННЫХ ---
@@ -1544,19 +1537,10 @@ async def process_food_response(message: Message, state: FSMContext, text_resp: 
 
 # --- ЗАПУСК БОТА ---
 async def main():
-    # Инициализация базы данных
     await init_db()
-    
-    # Включаем логи, чтобы видеть ошибки в терминале
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
     print("Бот запущен...")
-
-    # 👇 САМОЕ ВАЖНОЕ: Удаляем старые висящие сообщения
-    # Это спасет тебя от ошибки 429 (Resource exhausted)
-    await bot.delete_webhook(drop_pending_updates=True)
-
-    # Используем того бота (bot), которого создали в начале файла
-    await dp.start_polling(bot)
+    await dp.start_polling(Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML)))
 
 if __name__ == "__main__":
     try:

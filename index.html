@@ -3,272 +3,796 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Диетолог AI</title>
+    <title>Dietolog.AI</title>
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <link rel="stylesheet" href="style.css?v=105">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        /* === Глобальные стили === */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #F5F7FA;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            padding-bottom: 90px;
-            box-sizing: border-box;
-        }
+:root {
+    /* --- НАША ПАЛИТРА --- */
+    --primary: #80cbc4;       /* Пастельный бирюзовый */
+    --primary-dark: #4db6ac;  
+    --secondary: #b39ddb;     /* Пастельный фиолетовый */
+    --secondary-dark: #9575cd;
+    
+    --bg-color: #f7f9fc;      /* Светлый фон всего приложения */
+    --card-bg: #ffffff;       /* Белый фон карточек */
+    --text-main: #37474f;     /* Темно-серый текст */
+    --text-light: #90a4ae;    /* Светло-серый текст */
+    
+    --accent-orange: #ffcc80; /* Для мелких деталей (если нужно) */
+}
 
-        h1, h2, h3 { margin-top: 0; }
-        
-        /* Утилита для скрытия страниц */
-        .page-section {
-            display: none; /* По умолчанию всё скрыто */
-            animation: fadeIn 0.3s ease-in-out;
-        }
-        .page-section.active {
-            display: block; /* Показываем только активную */
-        }
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    user-select: none; /* Убираем выделение текста (ощущение приложения) */
+    -webkit-tap-highlight-color: transparent; /* Убираем синюю подсветку при клике на Android */
+}
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+/* --- СИСТЕМА ВКЛАДОК (TABS) --- */
+/* СКРЫВАЕМ все вкладки по умолчанию */
+.tab-content {
+    display: none;
+    padding-bottom: 80px; /* Чтобы контент не прятался за нижним меню */
+    animation: fadeIn 0.3s ease; /* Плавное появление */
+}
 
-        /* === Календарь === */
-        .calendar-strip {
-            display: flex;
-            justify-content: space-between;
-            background: #fff;
-            padding: 10px;
-            border-radius: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            margin-bottom: 20px;
-        }
-        .day-item {
-            text-align: center;
-            padding: 10px 15px;
-            border-radius: 10px;
-            color: #aaa;
-        }
-        .day-item.active { background: #222; color: #fff; }
-        .day-name { font-size: 12px; text-transform: uppercase; }
-        .day-date { font-size: 20px; font-weight: bold; margin-top: 5px; }
+/* ПОКАЗЫВАЕМ только ту, у которой класс active */
+.tab-content.active {
+    display: block;
+}
 
-        /* === Главная статистика === */
-        .main-stats-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: #fff;
-            border-radius: 20px;
-            padding: 30px 20px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-        }
+/* Анимация (для красоты) */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
-        /* Кольцо */
-        .progress-ring-container {
-            position: relative;
-            width: 140px;
-            height: 140px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .progress-ring-circle-bg { fill: none; stroke: #eee; stroke-width: 8; }
-        .progress-ring-circle {
-            fill: none; stroke: #222; stroke-width: 8;
-            stroke-linecap: round;
-            transform: rotate(-90deg); transform-origin: 50% 50%;
-            transition: stroke-dashoffset 0.5s;
-        }
-        .progress-ring-text {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%); text-align: center;
-        }
-        .progress-ring-value { font-size: 32px; font-weight: bold; color: #222; line-height: 1; }
-        .progress-ring-label { font-size: 14px; color: #999; margin-top: 5px; }
-        .fire-icon-black { font-size: 24px; color: #222; margin-top: 5px; }
+/* --- ШАПКА ГЛАВНОГО ЭКРАНА (НОВЫЙ ДИЗАЙН) --- */
+.main-header-bg {
+    background: linear-gradient(to bottom right, #80cbc4, #b39ddb);
+    padding: 20px 20px 90px 20px; /* Большой отступ снизу для наложения карточек */
+    color: white;
+    text-align: center;
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    position: relative;
+    z-index: 1;
+}
 
-        /* Макросы */
-        .macros-cards-row { display: flex; justify-content: space-between; width: 100%; gap: 10px; }
-        .macro-card {
-            flex: 1; background: #F9FAFB; border-radius: 15px;
-            padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03);
-        }
-        .macro-card h3 { font-size: 14px; margin: 0 0 5px 0; color: #666; }
-        .macro-value { font-size: 18px; font-weight: bold; color: #222; }
-        .macro-unit { font-size: 12px; color: #999; }
+/* Название приложения в шапке */
+.app-title {
+    /* Этот набор шрифтов включает San Francisco на iOS/Mac */
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+    font-size: 38px;
+    font-weight: 800; /* Полужирный, как в заголовках iOS */
+    color: white;
+    margin-bottom: 15px; /* Отступ до круга */
+    letter-spacing: -0.5px; /* Чуть плотнее буквы (фишка SF шрифта) */
+    opacity: 0.95;
+}
 
-        /* === Стили для ПРОФИЛЯ === */
-        .profile-header {
-            text-align: center; margin-bottom: 20px;
-        }
-        .profile-avatar {
-            width: 80px; height: 80px; background: #eee;
-            border-radius: 50%; margin: 0 auto 10px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 30px; color: #999;
-        }
-        .profile-card {
-            background: #fff; padding: 20px; border-radius: 15px;
-            margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .profile-row {
-            display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;
-        }
-        .profile-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .profile-label { color: #888; }
-        .profile-val { font-weight: bold; color: #222; }
+.top-stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
 
-        /* === Нижняя панель === */
-        .tab-bar {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 70px;
-            background: #fff; display: flex; justify-content: space-around;
-            align-items: center; border-top: 1px solid #f0f0f0;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.03); z-index: 100;
-            padding-bottom: 5px;
-        }
-        .tab-item {
-            display: flex; flex-direction: column; align-items: center;
-            justify-content: center; color: #ccc; text-decoration: none;
-            width: 60px; height: 100%; cursor: pointer;
-        }
-        .tab-item i { font-size: 26px; transition: all 0.2s; }
-        .tab-item.active { color: #222; }
-        .tab-item.active i { transform: scale(1.1); }
+.stat-side {
+    display: flex;
+    flex-direction: column;
+    width: 90px; /* Ширина под крупные цифры */
+}
 
+/* Крупные цифры слева и справа */
+.stat-val { 
+    font-size: 28px; 
+    font-weight: 800; 
+    line-height: 1.2;
+}
+.stat-label { font-size: 12px; opacity: 0.9; }
+
+/* Центральный круг */
+.main-progress-circle {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.circle-content {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.circle-big { 
+    font-size: 38px; 
+    font-weight: 800; 
+    line-height: 1; 
+}
+/* Маленькая надпись "Потреблено" */
+.circle-label { 
+    font-size: 10px; 
+    opacity: 0.8; 
+    margin-top: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* SVG кольцо прогресса */
+.progress-ring__circle {
+    transition: 0.5s stroke-dashoffset; /* Плавная анимация */
+    transform: rotate(-90deg); /* Начало сверху */
+    transform-origin: 50% 50%; /* Вращаем вокруг центра */
+    stroke-linecap: round; /* Закругленные края линии */
+}
+
+/* --- КАРТОЧКИ БЖУ (НАЛОЖЕНИЕ) --- */
+.macros-overlay-container {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 10px;
+    margin-top: -60px; /* Тянем вверх на синий фон */
+    position: relative;
+    z-index: 4;
+    gap: 10px;
+}
+
+.macro-card-new {
+    background: white;
+    border-radius: 24px;
+    padding: 12px 8px;
+    width: 32%;
+    text-align: center;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.macro-title { 
+    font-weight: bold; 
+    font-size: 13px; 
+    margin-bottom: 10px; 
+    color: var(--text-main); 
+}
+.macro-line {
+    height: 5px;
+    background: #f0f0f0;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+.macro-line .fill {
+    height: 100%;
+    background: var(--secondary); /* Фиолетовый по умолчанию */
+    border-radius: 3px;
+}
+/* Меняем цвет для Жиров и Углеводов */
+.macro-card-new:nth-child(1) .fill { background: #b39ddb; } /* Белки - фиолетовый */
+.macro-card-new:nth-child(2) .fill { background: #80cbc4; } /* Жиры - бирюзовый */
+.macro-card-new:nth-child(3) .fill { background: #9575cd; } /* Углеводы - темнее фиолетовый */
+
+.macro-val { font-size: 12px; color: var(--text-light); }
+
+/* --- ОСНОВНОЙ КОНТЕНТ --- */
+.home-content-wrapper {
+    padding: 20px;
+}
+
+/* Карточка AI-совета */
+.ai-tip-card {
+    background: linear-gradient(45deg, #ede7f6, #e1bee7); /* Очень светлый фиолетовый */
+    border-radius: 16px;
+    padding: 12px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #4a148c;
+    margin-top: 0px;
+}
+.ai-header { font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+
+/* Навигация по датам */
+.date-navigator {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 12px;
+    margin: 15px 0;
+    color: var(--text-main);
+    font-weight: 600;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+}
+
+/* --- СПИСОК ЕДЫ --- */
+/* --- СПИСОК ЕДЫ (ТОЛЬКО ИКОНКИ КРУПНЕЕ) --- */
+.meal-item {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 15px;
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+}
+
+/* 1. СЕРЫЙ КВАДРАТ (Оставляем оригинальный размер) */
+.meal-icon {
+    width: 44px;   /* <-- Вернули как было */
+    height: 44px;  /* <-- Вернули как было */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border-radius: 12px;
+    margin-right: 15px;
+}
+
+/* 2. УВЕЛИЧИВАЕМ ТОЛЬКО КАРТИНКУ ВНУТРИ */
+.meal-icon img { 
+    width: 38px;   /* Было 28px -> Стало 38px */
+    height: 38px;  /* Было 28px -> Стало 38px */
+    object-fit: contain; /* Чтобы картинка не обрезалась, если не влезет */
+}
+
+.meal-info { flex-grow: 1; }
+.meal-info h4 { margin: 0; font-size: 16px; font-weight: 600; }
+.meal-info span { font-size: 13px; color: var(--text-light); }
+
+.add-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: #f0f0f0;
+    color: var(--text-main);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- СТАТИСТИКА И ПРОФИЛЬ --- */
+.stats-card, .referral-card, .settings-group {
+    background: var(--card-bg);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+.highlight-text { margin: 5px 0 20px 0; color: var(--text-main); }
+.legend { display: flex; gap: 15px; justify-content: center; margin-top: 15px; font-size: 12px; }
+
+.add-weight-btn {
+    background: var(--secondary);
+    color: white;
+    border: none;
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+/* Профиль */
+/* === ШАПКА ПРОФИЛЯ (Новая с градиентом) === */
+.profile-header { 
+    /* Наш фирменный градиент */
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    
+    /* Отступы, чтобы было просторно */
+    padding: 25px 20px 30px 20px; 
+    
+    text-align: center;
+    color: white; /* Текст теперь белый */
+    
+    /* Скругляем углы снизу, как на Главной */
+    border-bottom-left-radius: 30px;
+    border-bottom-right-radius: 30px;
+    
+    margin-bottom: 25px;
+    margin-top: 0;
+    
+    /* Тень, чтобы красиво "висело" над фоном */
+    box-shadow: 0 10px 20px rgba(179, 157, 219, 0.2);
+}
+
+/* Имя пользователя */
+.profile-header h2 {
+    margin: 15px 0 10px 0;
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Бейдж PRO */
+.badge { 
+    background: #ffd54f; /* Желтый акцент */
+    color: #37474f;
+    padding: 4px 12px; 
+    border-radius: 12px; 
+    font-size: 12px; 
+    font-weight: 800;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 15px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-row .val { font-weight: 600; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
+
+.referral-card { border: 2px solid var(--secondary); text-align: center; } /* Рамка теперь фиолетовая */
+.ref-btn { background: none; border: none; color: var(--secondary-dark); font-weight: bold; cursor: pointer; margin-top: 10px;}
+
+/* --- НИЖНЕЕ МЕНЮ --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: white;
+    height: 70px;
+    border-radius: 35px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+.nav-item {
+    font-size: 24px;
+    color: #cfd8dc;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.nav-item.active {
+    color: var(--text-main);
+    background: #eceff1;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+}
+
+/* --- ПЛАВАЮЩАЯ КНОПКА (ОБНОВЛЕННАЯ) --- */
+.floating-add {
+    position: absolute;
+    right: 25px;
+    bottom: 85px; /* Чуть подняли */
+    
+    /* ТЕПЕРЬ ОНА ФИОЛЕТОВАЯ (в тему) */
+    background: var(--secondary); 
+    
+    width: 60px; /* Чуть крупнее */
+    height: 60px;
+    border-radius: 50%;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    
+    /* Тень тоже фиолетовая */
+    box-shadow: 0 4px 15px rgba(179, 157, 219, 0.6);
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+.floating-add:active {
+    transform: scale(0.95);
+}
+
+/* Было: width: 80px; height: 80px; */
+.avatar img { 
+    width: 70px;  /* <-- Сделали чуть меньше */
+    height: 70px; /* <-- Сделали чуть меньше */
+    border-radius: 50%; 
+    border: 3px solid white; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+}
+
+/* Отступ для заголовка "Журнал питания" */
+#tab-stats h2 {
+    padding-left: 20px; /* Отступ слева */
+    margin-top: 20px;   /* Немного отступим сверху */
+    margin-bottom: 15px; /* И снизу до карточки */
+}
+
+/* Заголовок "Журнал питания" */
+#tab-stats h2 {
+    padding-left: 20px; /* Отступ слева */
+    margin-top: 25px;   /* Отступ сверху */
+    margin-bottom: 15px; 
+    
+    /* ДЕЛАЕМ БОЛЬШЕ */
+    font-size: 32px;    /* Был обычный, стал крупный (как на айфоне) */
+    font-weight: 800;   /* Жирный шрифт */
+    letter-spacing: -0.5px; /* Чуть плотнее буквы для стиля */
+}
+
+/* === ЛОГИКА ВКЛАДОК (Вставь это в style.css) === */
+
+/* 1. По умолчанию СКРЫВАЕМ все секции */
+.content-section {
+    display: none; /* Спрятать всё */
+    padding-bottom: 100px; /* Отступ снизу, чтобы меню не перекрывало контент */
+    animation: fadeIn 0.3s ease-in-out; /* Плавное появление */
+}
+
+/* 2. Показываем ТОЛЬКО активную секцию */
+.content-section.active {
+    display: block; /* Показать */
+}
+
+/* 3. Фиксируем меню внизу экрана */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: white;
+    z-index: 1000; /* Чтобы меню было поверх всего */
+    border-top: 1px solid #eee;
+    padding-bottom: env(safe-area-inset-bottom); /* Для айфонов без кнопок */
+}
+
+/* Анимация плавного появления */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* === ГРАФИК НЕДЕЛИ === */
+.chart-card {
+    background: white;
+    border-radius: 20px;
+    padding: 20px;
+    margin-top: 15px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+}
+
+.chart-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    color: #333;
+}
+
+.chart-container {
+    display: flex;
+    justify-content: space-between;
+    height: 160px; /* Высота графика */
+    position: relative;
+    padding-top: 20px;
+}
+
+/* Пунктирная линия нормы */
+.goal-line {
+    position: absolute;
+    left: 0; 
+    right: 0;
+    bottom: 0; /* JS поднимет её на нужную высоту */
+    border-top: 2px dashed #d1d8e0;
+    z-index: 1;
+}
+
+.goal-line::after {
+    content: "Норма";
+    position: absolute;
+    right: 0;
+    top: -20px;
+    font-size: 10px;
+    color: #95a5a6;
+    background: white;
+    padding-left: 5px;
+}
+
+/* Столбики */
+.chart-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    width: 10%;
+    height: 100%;
+    z-index: 2;
+}
+
+.chart-col span {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #95a5a6;
+    font-weight: 600;
+}
+
+.bar-bg {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    border-radius: 10px;
+}
+
+.bar-fill {
+    width: 12px; /* Толщина полоски */
+    margin: 0 auto;
+    background: #eee;
+    border-radius: 10px;
+    height: 4px; /* Стартовая высота */
+    transition: height 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 🔥 ТВОЙ ЦВЕТ: Бирюзовый низ -> Фиолетовый верх */
+.bar-fill.active {
+    background: linear-gradient(to top, #76E1D9 0%, #A094F0 100%);
+    box-shadow: 0 4px 10px rgba(160, 148, 240, 0.4);
+}
+
+/* Если сегодня - подсветим день */
+.chart-col.today span {
+    color: #A094F0;
+    font-weight: 800;
+}
     </style>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
 
-    <div id="page-home" class="page-section active">
-        <div class="calendar-strip">
-            <div class="day-item"><div class="day-name">ПН</div><div class="day-date">26</div></div>
-            <div class="day-item"><div class="day-name">ВТ</div><div class="day-date">27</div></div>
-            <div class="day-item active"><div class="day-name">СР</div><div class="day-date">28</div></div>
-            <div class="day-item"><div class="day-name">ЧТ</div><div class="day-date">29</div></div>
-            <div class="day-item"><div class="day-name">ПТ</div><div class="day-date">30</div></div>
-        </div>
+    <div id="home" class="content-section active">
+        <div class="main-header-bg">
+            <div class="top-stats-row" style="margin-top: 30px;">
+                <div class="stat-side">
+                    <span class="stat-val" id="cal-left">2500</span>
+                    <span class="stat-label">Осталось</span>
+                </div>
 
-        <div class="main-stats-container">
-            <div class="progress-ring-container">
-                <svg class="progress-ring" width="140" height="140">
-                    <circle class="progress-ring-circle-bg" cx="70" cy="70" r="60" />
-                    <circle class="progress-ring-circle" cx="70" cy="70" r="60" stroke-dasharray="377" stroke-dashoffset="377" />
-                </svg>
-                <div class="progress-ring-text">
-                    <div class="progress-ring-value" id="calories-remaining">0</div>
-                    <div class="progress-ring-label">ккал осталось</div>
-                    <i class="bi bi-fire fire-icon-black"></i>
+                <div class="main-progress-circle">
+                    <div class="circle-content">
+                        <span class="circle-big" id="consumed-val">0</span>
+                        <span class="circle-label">Потреблено</span>
+                    </div>
+                    
+                    <svg class="progress-ring" width="140" height="140">
+                        <circle 
+                            class="progress-ring__track"
+                            stroke="rgba(255,255,255, 0.2)" 
+                            stroke-width="8" 
+                            fill="transparent" 
+                            r="60" cx="70" cy="70"
+                        />
+                        <circle 
+                            class="progress-ring__circle" 
+                            stroke="white" 
+                            stroke-width="8" 
+                            fill="transparent" 
+                            r="60" cx="70" cy="70"
+                        />
+                    </svg>
+                </div>
+
+                <div class="stat-side">
+                    <div class="stat-val" id="target-calories">2960</div>
+                    <div class="stat-label">Цель</div>
                 </div>
             </div>
+        </div>
 
-            <div class="macros-cards-row">
-                <div class="macro-card"><h3>Белки</h3><div class="macro-value" id="protein-val">0<span class="macro-unit">г</span></div></div>
-                <div class="macro-card"><h3>Углеводы</h3><div class="macro-value" id="carbs-val">0<span class="macro-unit">г</span></div></div>
-                <div class="macro-card"><h3>Жиры</h3><div class="macro-value" id="fats-val">0<span class="macro-unit">г</span></div></div>
+        <div class="macros-overlay-container">
+    
+    <div class="macro-card-new">
+        <span class="macro-title">Белки</span>
+        <div class="macro-line">
+            <div id="prot-bar" class="fill" style="width: 0%"></div>
+        </div>
+        <span class="macro-val">
+            <span id="prot-val">0</span> / <span id="prot-max">0</span>г
+        </span>
+    </div>
+
+    <div class="macro-card-new">
+        <span class="macro-title">Жиры</span>
+        <div class="macro-line">
+            <div id="fat-bar" class="fill" style="width: 0%; background: var(--primary);"></div>
+        </div>
+        <span class="macro-val">
+            <span id="fat-val">0</span> / <span id="fat-max">0</span>г
+        </span>
+    </div>
+
+    <div class="macro-card-new">
+        <span class="macro-title">Углеводы</span>
+        <div class="macro-line">
+            <div id="carb-bar" class="fill" style="width: 0%"></div>
+        </div>
+        <span class="macro-val">
+            <span id="carb-val">0</span> / <span id="carb-max">0</span>г
+        </span>
+    </div>
+    
+</div>
+
+        <div class="home-content-wrapper">
+            
+            <div class="ai-tip-card">
+                <div class="ai-header">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Совет
+                </div>
+                <p>Съешь сейчас ужин с белками (курица, рыба), сложные углеводы и овощи.</p>
+            </div>
+
+            <div class="date-navigator">
+                <i class="fa-solid fa-chevron-left"></i>
+                <span>Сегодня</span>
+                <i class="fa-solid fa-chevron-right"></i>
+            </div>
+
+           <div class="meals-list">
+                <div class="meal-item">
+                    <div class="meal-icon">
+                        <img src="./img/egg.png" alt="Завтрак">
+                    </div>
+                    <div class="meal-info"><h4>Завтрак</h4><span>0 / 727 ккал</span></div>
+                    <button class="add-btn">+</button>
+                </div>
+
+                <div class="meal-item">
+                    <div class="meal-icon">
+                        <img src="./img/meat.png" alt="Обед">
+                    </div>
+                    <div class="meal-info"><h4>Обед</h4><span>0 / 848 ккал</span></div>
+                    <button class="add-btn">+</button>
+                </div>
+
+                <div class="meal-item">
+                    <div class="meal-icon">
+                        <img src="./img/salat.png" alt="Ужин">
+                    </div>
+                    <div class="meal-info"><h4>Ужин</h4><span>0 / 485 ккал</span></div>
+                    <button class="add-btn">+</button>
+                </div>
+
+                <div class="meal-item">
+                    <div class="meal-icon">
+                        <img src="./img/banana.png" alt="Перекус">
+                    </div>
+                    <div class="meal-info"><h4>Перекус</h4><span>0 / 364 ккал</span></div>
+                    <button class="add-btn">+</button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+
+    <div id="stats" class="content-section">
+        
+        <div class="stats-card" style="margin-bottom: -15px; padding-bottom: -15px;">
+            <div class="stats-header">
+                <div>
+                    <span class="label">Сегодня</span>
+                    <h1 class="highlight-text" id="stats-calories-today">0 ккал</h1>
+                </div>
+            </div>
+            <div class="chart-container">
+                 <canvas id="caloriesChart"></canvas>
             </div>
         </div>
 
-        <div style="text-align:center; color:#222; margin-top:20px;">
-            <h3>Недавно добавлено</h3>
-            <div style="color:#aaa; background:#fff; padding:20px; border-radius:15px;">Список пуст</div>
+        <div class="food-history-container">
+            <h3 style="margin-left: 15px; margin-top: 5px; margin-bottom: 10px;">
+                История за сегодня
+            </h3>
+
+            <div id="food-list"></div>
+
+            <div style="height: 100px;"></div>
         </div>
+        
     </div>
 
 
-    <div id="page-stats" class="page-section">
-        <h2 style="text-align:center; margin-top:20px;">Ваш Прогресс</h2>
-        <div style="background:#fff; padding:40px 20px; text-align:center; border-radius:20px; color:#999;">
-            <i class="bi bi-bar-chart-line" style="font-size:40px; margin-bottom:10px; display:block;"></i>
-            Графики появятся здесь,<br>когда будет больше данных
+    <div id="profile" class="content-section">
+    <div class="profile-header">
+        <div class="avatar">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Portrait_Placeholder.png" alt="Avatar">
         </div>
+        <h2 id="profile-name">Антон</h2>
+        <span class="pro-badge">Pro</span>
+    </div>
+
+    <div class="settings-group">
+        <h3>Мои данные</h3>
+        
+        <div class="setting-row">
+            <div class="setting-label">
+                <div class="icon-bg" style="background: #e3f2fd; color: #2196f3;">
+                    <i class="fa-solid fa-person-running"></i>
+                </div>
+                <span>Активность</span>
+            </div>
+            <div class="val">Средняя <i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-label">
+                <div class="icon-bg" style="background: #e8f5e9; color: #4caf50;">
+                    <i class="fa-solid fa-weight-scale"></i>
+                </div>
+                <span>Текущий вес</span>
+            </div>
+            <div class="val"><span id="user-weight">70</span> кг <i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-label">
+                <div class="icon-bg" style="background: #fff3e0; color: #ff9800;">
+                    <i class="fa-solid fa-bullseye"></i>
+                </div>
+                <span>Цель</span>
+            </div>
+            <div class="val"><span id="user-goal">Похудеть</span> <i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-label">
+                <div class="icon-bg" style="background: #f3e5f5; color: #9c27b0;">
+                    <i class="fa-solid fa-ruler-vertical"></i>
+                </div>
+                <span>Рост</span>
+            </div>
+            <div class="val"><span id="user-height">180</span> см <i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+
+        <div class="setting-row">
+            <div class="setting-label">
+                <div class="icon-bg" style="background: #ffebee; color: #f44336;">
+                    <i class="fa-solid fa-cake-candles"></i>
+                </div>
+                <span>Возраст</span>
+            </div>
+            <div class="val"><span id="user-age">25</span> лет <i class="fa-solid fa-chevron-right"></i></div>
+        </div>
+    </div>
+</div>
+
     </div>
 
 
-    <div id="page-profile" class="page-section">
-        <div class="profile-header">
-            <div class="profile-avatar"><i class="bi bi-person"></i></div>
-            <h2 id="user-name">Пользователь</h2>
-            <p style="color:#999;" id="user-id">ID: ...</p>
-        </div>
+    <nav class="bottom-nav">
+        <a href="#home" class="nav-item active">
+            <i class="fa-solid fa-house"></i>
+        </a>
 
-        <div class="profile-card">
-            <div class="profile-row"><span class="profile-label">Возраст</span><span class="profile-val" id="p-age">-</span></div>
-            <div class="profile-row"><span class="profile-label">Рост</span><span class="profile-val" id="p-height">-</span></div>
-            <div class="profile-row"><span class="profile-label">Вес</span><span class="profile-val" id="p-weight">-</span></div>
-        </div>
+        <a href="#stats" class="nav-item">
+            <i class="fa-solid fa-chart-simple"></i>
+        </a>
 
-        <div class="profile-card">
-            <div class="profile-row"><span class="profile-label">Цель</span><span class="profile-val">Похудение</span></div>
-            <div class="profile-row"><span class="profile-label">Активность</span><span class="profile-val">Средняя</span></div>
-        </div>
-    </div>
+        <a href="#profile" class="nav-item">
+            <i class="fa-regular fa-user"></i>
+        </a>
+    </nav>
 
-
-    <div class="tab-bar">
-        <div class="tab-item active" onclick="switchTab('home', this)">
-            <i class="bi bi-house-door-fill"></i>
-        </div>
-        <div class="tab-item" onclick="switchTab('stats', this)">
-            <i class="bi bi-bar-chart-line-fill"></i>
-        </div>
-        <div class="tab-item" onclick="switchTab('profile', this)">
-            <i class="bi bi-person-fill"></i>
-        </div>
-    </div>
-
-    <script>
-        let tg = window.Telegram.WebApp;
-        tg.expand();
-
-        // 1. ЛОГИКА ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК
-        function switchTab(tabName, element) {
-            // Скрываем все страницы
-            document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-            // Убираем подсветку у всех кнопок
-            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
-
-            // Показываем нужную страницу
-            document.getElementById('page-' + tabName).classList.add('active');
-            // Подсвечиваем нажатую кнопку
-            element.classList.add('active');
-        }
-
-        // 2. ЗАПОЛНЕНИЕ ДАННЫХ (Симуляция + Подготовка)
-        function loadData() {
-            // Получаем данные из Телеграм (если есть)
-            const user = tg.initDataUnsafe.user;
-            
-            if (user) {
-                document.getElementById('user-name').innerText = user.first_name + (user.last_name ? " " + user.last_name : "");
-                document.getElementById('user-id').innerText = "ID: " + user.id;
-            }
-
-            // === ЗДЕСЬ БУДЕТ ЗАГРУЗКА ИЗ БОТА ===
-            // Пока ставим заглушку, как было в твоем примере:
-            // 18 лет, 185 см, 78 кг (твои данные)
-            document.getElementById('p-age').innerText = "18 лет";
-            document.getElementById('p-height').innerText = "185 см";
-            document.getElementById('p-weight').innerText = "78 кг";
-
-            // Симуляция заполнения кольца (пока нет связи с python)
-            setTimeout(() => setProgress(0), 500); // Пока 0, так как данных нет
-        }
-
-        function setProgress(percent) {
-            const circle = document.querySelector('.progress-ring-circle');
-            const radius = circle.r.baseVal.value;
-            const circumference = 2 * Math.PI * radius;
-            const offset = circumference - (percent / 100 * circumference);
-            circle.style.strokeDashoffset = offset;
-        }
-
-        // Запускаем при старте
-        loadData();
-
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
