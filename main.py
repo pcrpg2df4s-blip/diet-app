@@ -298,6 +298,61 @@ dp.include_router(router)
 import sqlite3 # Не забудь этот импорт наверху
 from aiogram.enums import ParseMode # И этот для HTML
 
+# === НОВЫЙ ХЕНДЛЕР ДЛЯ УДАЛЕНИЯ ЕДЫ (ШАГ 5) ===
+@router.message(F.web_app_data)
+async def handle_web_app_data(message: Message, state: FSMContext):
+    try:
+        # Читаем данные, которые прислал сайт
+        data = json.loads(message.web_app_data.data)
+        
+        # Если это команда на удаление
+        if data.get('action') == 'delete_food':
+            food_id = data.get('id')
+            user_id = message.from_user.id
+            
+            async with aiosqlite.connect(DB_NAME) as db:
+                # 1. Узнаем, сколько калорий было в этой еде (чтобы вернуть их)
+                async with db.execute("SELECT calories, proteins, fats, carbs FROM food_log WHERE id = ?", (food_id,)) as cursor:
+                    row = await cursor.fetchone()
+                
+                if row:
+                    cal, prot, fat, carb = row
+                    
+                    # 2. Удаляем запись из лога
+                    await db.execute("DELETE FROM food_log WHERE id = ?", (food_id,))
+                    
+                    # 3. Вычитаем эти калории из съеденного сегодня (возвращаем лимит)
+                    # Используем MAX(0, ...), чтобы случайно не уйти в минус
+                    await db.execute("""
+                        UPDATE users 
+                        SET consumed_calories = MAX(0, consumed_calories - ?),
+                            consumed_protein = MAX(0, consumed_protein - ?),
+                            consumed_fat = MAX(0, consumed_fat - ?),
+                            consumed_carbs = MAX(0, consumed_carbs - ?)
+                        WHERE user_id = ?
+                    """, (cal, prot, fat, carb, user_id))
+                    
+                    # 4. Обновляем график (nutrition_history)
+                    today = date.today().isoformat()
+                    await db.execute("""
+                        UPDATE nutrition_history
+                        SET total_calories = MAX(0, total_calories - ?)
+                        WHERE user_id = ? AND date = ?
+                    """, (cal, user_id, today))
+                    
+                    await db.commit()
+                    
+                    await message.answer(f"🗑 <b>Удалено!</b>\nКалории ({int(cal)}) возвращены в лимит.", parse_mode="HTML")
+                    
+                    # 5. Самое важное: Обновляем кнопку меню, чтобы там удалилась еда
+                    await cmd_start(message, state)
+                    
+                else:
+                    await message.answer("⚠️ Не удалось найти эту запись (возможно, она уже удалена).")
+                    
+    except Exception as e:
+        print(f"Ошибка при обработке данных из WebApp: {e}")
+
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
     # Сброс регистрации
