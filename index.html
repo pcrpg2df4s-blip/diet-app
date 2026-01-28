@@ -559,128 +559,75 @@ body {
 <body>
 
     <div id="home" class="content-section active">
-        <div class="main-header-bg">
-            <div class="top-stats-row" style="margin-top: 30px;">
-                <div class="stat-side">
-                    <span class="stat-val" id="cal-left">2500</span>
-                    <span class="stat-label">Осталось</span>
-                </div>
+        
+        <div class="week-calendar-container">
+            <div id="week-days-row" class="week-row"></div>
+        </div>
 
-                <div class="main-progress-circle">
-                    <div class="circle-content">
-                        <span class="circle-big" id="consumed-val">0</span>
-                        <span class="circle-label">Потреблено</span>
-                    </div>
-                    
-                    <svg class="progress-ring" width="140" height="140">
-                        <circle 
-                            class="progress-ring__track"
-                            stroke="rgba(255,255,255, 0.2)" 
-                            stroke-width="8" 
-                            fill="transparent" 
-                            r="60" cx="70" cy="70"
-                        />
-                        <circle 
-                            class="progress-ring__circle" 
-                            stroke="white" 
-                            stroke-width="8" 
-                            fill="transparent" 
-                            r="60" cx="70" cy="70"
-                        />
+        <div class="dashboard-card main-calorie-card">
+            <div class="cal-info">
+                <h1 id="cal-left-display">0</h1>
+                <span class="sub-label">ккал осталось</span>
+            </div>
+            
+            <div class="cal-ring-container">
+                <svg class="progress-ring-lg" width="120" height="120">
+                    <circle class="ring-bg" stroke="#f2f2f7" stroke-width="10" fill="transparent" r="50" cx="60" cy="60"/>
+                    <circle id="cal-progress-circle" class="ring-progress" stroke="#1c1c1e" stroke-width="10" fill="transparent" r="50" cx="60" cy="60"/>
+                </svg>
+                <div class="fire-icon">🔥</div>
+            </div>
+        </div>
+
+        <div class="macros-grid">
+            
+            <div class="macro-card">
+                <div class="macro-text">
+                    <span class="macro-val" id="prot-left">0г</span>
+                    <span class="macro-label">Белки</span>
+                </div>
+                <div class="mini-ring">
+                    <svg width="50" height="50">
+                        <circle stroke="#f2f2f7" stroke-width="4" fill="transparent" r="20" cx="25" cy="25"/>
+                        <circle id="prot-ring" stroke="#FF5E57" stroke-width="4" fill="transparent" r="20" cx="25" cy="25"/>
                     </svg>
                 </div>
+            </div>
 
-                <div class="stat-side">
-                    <div class="stat-val" id="target-calories">2960</div>
-                    <div class="stat-label">Цель</div>
+            <div class="macro-card">
+                <div class="macro-text">
+                    <span class="macro-val" id="carb-left">0г</span>
+                    <span class="macro-label">Угли</span>
+                </div>
+                <div class="mini-ring">
+                    <svg width="50" height="50">
+                        <circle stroke="#f2f2f7" stroke-width="4" fill="transparent" r="20" cx="25" cy="25"/>
+                        <circle id="carb-ring" stroke="#FFD32A" stroke-width="4" fill="transparent" r="20" cx="25" cy="25"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="macro-card">
+                <div class="macro-text">
+                    <span class="macro-val" id="fat-left">0г</span>
+                    <span class="macro-label">Жиры</span>
+                </div>
+                <div class="mini-ring">
+                    <svg width="50" height="50">
+                        <circle stroke="#f2f2f7" stroke-width="4" fill="transparent" r="20" cx="25" cy="25"/>
+                        <circle id="fat-ring" stroke="#3C40C6" stroke-width="4" fill="transparent" r="20" cx="25" cy="25"/>
+                    </svg>
                 </div>
             </div>
         </div>
 
-        <div class="macros-overlay-container">
-    
-    <div class="macro-card-new">
-        <span class="macro-title">Белки</span>
-        <div class="macro-line">
-            <div id="prot-bar" class="fill" style="width: 0%"></div>
+        <div class="recent-header">
+            <h3>Недавно добавлено</h3>
         </div>
-        <span class="macro-val">
-            <span id="prot-val">0</span> / <span id="prot-max">0</span>г
-        </span>
-    </div>
+        
+        <div id="recent-food-list"></div>
 
-    <div class="macro-card-new">
-        <span class="macro-title">Жиры</span>
-        <div class="macro-line">
-            <div id="fat-bar" class="fill" style="width: 0%; background: var(--primary);"></div>
-        </div>
-        <span class="macro-val">
-            <span id="fat-val">0</span> / <span id="fat-max">0</span>г
-        </span>
-    </div>
-
-    <div class="macro-card-new">
-        <span class="macro-title">Углеводы</span>
-        <div class="macro-line">
-            <div id="carb-bar" class="fill" style="width: 0%"></div>
-        </div>
-        <span class="macro-val">
-            <span id="carb-val">0</span> / <span id="carb-max">0</span>г
-        </span>
-    </div>
-    
-</div>
-
-        <div class="home-content-wrapper">
-            
-            <div class="ai-tip-card">
-                <div class="ai-header">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> Совет
-                </div>
-                <p>Съешь сейчас ужин с белками (курица, рыба), сложные углеводы и овощи.</p>
-            </div>
-
-            <div class="date-navigator">
-                <i class="fa-solid fa-chevron-left"></i>
-                <span>Сегодня</span>
-                <i class="fa-solid fa-chevron-right"></i>
-            </div>
-
-           <div class="meals-list">
-                <div class="meal-item">
-                    <div class="meal-icon">
-                        <img src="./img/egg.png" alt="Завтрак">
-                    </div>
-                    <div class="meal-info"><h4>Завтрак</h4><span>0 / 727 ккал</span></div>
-                    <button class="add-btn">+</button>
-                </div>
-
-                <div class="meal-item">
-                    <div class="meal-icon">
-                        <img src="./img/meat.png" alt="Обед">
-                    </div>
-                    <div class="meal-info"><h4>Обед</h4><span>0 / 848 ккал</span></div>
-                    <button class="add-btn">+</button>
-                </div>
-
-                <div class="meal-item">
-                    <div class="meal-icon">
-                        <img src="./img/salat.png" alt="Ужин">
-                    </div>
-                    <div class="meal-info"><h4>Ужин</h4><span>0 / 485 ккал</span></div>
-                    <button class="add-btn">+</button>
-                </div>
-
-                <div class="meal-item">
-                    <div class="meal-icon">
-                        <img src="./img/banana.png" alt="Перекус">
-                    </div>
-                    <div class="meal-info"><h4>Перекус</h4><span>0 / 364 ккал</span></div>
-                    <button class="add-btn">+</button>
-                </div>
-            </div>
-            
-        </div>
+        <div style="height: 100px;"></div>
     </div>
 
 
