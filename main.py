@@ -18,6 +18,7 @@ from database import update_body_params
 from aiogram.types import ReplyKeyboardRemove
 from aiogram import F
 import time
+from urllib.parse import quote
 
 from aiogram import Bot, Dispatcher, F, Router, html
 from aiogram.client.default import DefaultBotProperties
@@ -51,60 +52,55 @@ LOGO_URL = "https://cdn-icons-png.flaticon.com/512/3063/3063822.png"
 DB_NAME = "diet_bot.db"
 
 async def init_db():
+    # Открываем соединение
     async with aiosqlite.connect(DB_NAME) as db:
-        # 1. Таблица пользователей (ОСНОВНАЯ)
+        # 1. Таблица пользователей
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
-                username TEXT,
                 first_name TEXT,
-                gender TEXT,
+                weight REAL,
+                height REAL,
                 age INTEGER,
-                height INTEGER,
-                weight INTEGER,
+                gender TEXT,
                 activity TEXT,
                 goal TEXT,
-                calories_limit INTEGER,
-                
-                -- Вода (твои старые настройки)
-                water_goal INTEGER DEFAULT 2000,
-                water_current INTEGER DEFAULT 0,
-                last_water_update DATE,
-
-                -- 👇 НОВЫЕ КОЛОНКИ: СЪЕДЕНО ЗА СЕГОДНЯ (ДЛЯ САЙТА) 👇
-                consumed_calories INTEGER DEFAULT 0,
-                consumed_protein INTEGER DEFAULT 0,
-                consumed_fat INTEGER DEFAULT 0,
-                consumed_carbs INTEGER DEFAULT 0
+                calories_limit REAL,
+                consumed_calories REAL DEFAULT 0,
+                consumed_protein REAL DEFAULT 0,
+                consumed_fat REAL DEFAULT 0,
+                consumed_carbs REAL DEFAULT 0,
+                last_water_update TEXT
             )
         """)
         
-        # 2. Лог еды (Оставляем, пригодится для истории)
+        # 2. Таблица логов еды
         await db.execute("""
             CREATE TABLE IF NOT EXISTS food_log (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
                 food_name TEXT,
-                calories INTEGER,
-                proteins INTEGER,
-                fats INTEGER,
-                carbs INTEGER,
-                date DATE
+                calories REAL,
+                proteins REAL,
+                fats REAL,
+                carbs REAL,
+                date TEXT
             )
         """)
 
-        # 3. Таблица для истории калорий (для графика)
+        # 3. НОВАЯ ТАБЛИЦА ДЛЯ ГРАФИКА (Шаг 1 из прошлого совета)
         await db.execute("""
             CREATE TABLE IF NOT EXISTS nutrition_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER,
-                date DATE,
-                total_calories INTEGER,
-                UNIQUE(user_id, date)
+                date TEXT,
+                total_calories REAL,
+                PRIMARY KEY (user_id, date)
             )
         """)
         
-        await db.commit()
+        # Сохраняем ВСЕ таблицы сразу, пока соединение активно (внутри блока async with)
+        await db.commit() 
+    # Здесь блок async with заканчивается, и соединение закрывается автоматически
 
 # --- МАШИНА СОСТОЯНИЙ (FSM) ---
 class Registration(StatesGroup):
@@ -250,28 +246,49 @@ async def get_todays_food_log(user_id):
 
 async def get_current_week_history(user_id):
     today = date.today()
+    # Находим прошлый понедельник (0 - понедельник, 1 - вторник и т.д.)
     start_of_week = today - timedelta(days=today.weekday())
     
-    daily_calories = {}
-    
+    week_data = []
     async with aiosqlite.connect(DB_NAME) as db:
-        async with db.execute("""
-            SELECT date, total_calories
-            FROM nutrition_history
-            WHERE user_id = ? AND date >= ?
-        """, (user_id, start_of_week.isoformat())) as cursor:
-            rows = await cursor.fetchall()
-            for day_str, cal in rows:
-                day_date = date.fromisoformat(day_str)
-                if (day_date - start_of_week).days < 7:
-                    daily_calories[day_date] = int(cal)
+        for i in range(7):
+            current_day = (start_of_week + timedelta(days=i)).isoformat()
+            async with db.execute(
+                "SELECT total_calories FROM nutrition_history WHERE user_id = ? AND date = ?",
+                (user_id, current_day)
+            ) as cursor:
+                row = await cursor.fetchone()
+                week_data.append(str(row[0]) if row else "0")
+    
+    # Возвращаем строку через запятую, например: "0,12000,0,0,0,0,0"
+    return ",".join(week_data)
 
-    history = []
-    for i in range(7):
-        current_date = start_of_week + timedelta(days=i)
-        history.append(daily_calories.get(current_date, 0))
-        
-    return ",".join(map(str, history))
+async def get_today_food_json(user_id):
+    today = date.today().isoformat()
+    food_list = []
+
+    async with aiosqlite.connect(DB_NAME) as db:
+        # Берем id, имя, калории, бжу и дату
+        async with db.execute("""
+            SELECT id, food_name, calories, proteins, fats, carbs 
+            FROM food_log 
+            WHERE user_id = ? AND date = ?
+            ORDER BY id DESC
+        """, (user_id, today)) as cursor:
+            rows = await cursor.fetchall()
+
+            for row in rows:
+                food_list.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "cal": int(row[2]),
+                    "p": int(row[3]),
+                    "f": int(row[4]),
+                    "c": int(row[5])
+                })
+
+    # Превращаем список в строку JSON
+    return json.dumps(food_list, ensure_ascii=False)
 
 # --- ОБРАБОТЧИКИ (HANDLERS) ---
 dp = Dispatcher()
@@ -283,7 +300,7 @@ from aiogram.enums import ParseMode # И этот для HTML
 
 @router.message(Command("start"))
 async def cmd_start(message: Message, state: FSMContext):
-    # Сброс состояния регистрации, если оно зависло
+    # Сброс регистрации
     current_state = await state.get_state()
     if current_state and current_state.startswith("Registration:"):
         await state.clear()
@@ -291,9 +308,8 @@ async def cmd_start(message: Message, state: FSMContext):
     user_id = message.from_user.id
     name = message.from_user.first_name or "Друг"
 
-    # 1. ПОДКЛЮЧАЕМСЯ К БАЗЕ
     async with aiosqlite.connect(DB_NAME) as db:
-        # Проверяем сброс счетчиков (новый день)
+        # 1. Проверка нового дня
         async with db.execute("SELECT last_water_update FROM users WHERE user_id = ?", (user_id,)) as cursor:
             last_update_row = await cursor.fetchone()
         
@@ -306,7 +322,7 @@ async def cmd_start(message: Message, state: FSMContext):
             """, (today_str, user_id))
             await db.commit()
 
-        # Достаем данные
+        # 2. Получаем данные пользователя
         async with db.execute("""
             SELECT weight, height, age, calories_limit, 
                    consumed_calories, consumed_protein, consumed_fat, consumed_carbs 
@@ -314,36 +330,36 @@ async def cmd_start(message: Message, state: FSMContext):
         """, (user_id,)) as cursor:
             user_data = await cursor.fetchone()
 
-    # === СЦЕНАРИЙ 1: ПОЛЬЗОВАТЕЛЬ НАЙДЕН ===
     if user_data:
-        # Распаковываем кортеж (ЭТО ВАЖНО: порядок должен совпадать с SELECT)
         weight, height, age, limit, c_cal, c_prot, c_fat, c_carb = user_data
         
-        # Защита от пустоты
         limit = limit or 2500
-        c_cal = c_cal or 0
-        c_prot = c_prot or 0
-        c_fat = c_fat or 0
-        c_carb = c_carb or 0
-
-        # 👇 СЧИТАЕМ ЛИМИТЫ БЖУ АВТОМАТИЧЕСКИ (30% / 30% / 40%)
-        # Это нужно для белых карточек
+        # Расчет лимитов БЖУ
         p_max = int((limit * 0.3) / 4)
         f_max = int((limit * 0.3) / 9)
         c_max = int((limit * 0.4) / 4)
 
-        # Формируем простую ссылку (как в save_food)
+        # === НОВЫЕ СТРОКИ ===
+        # 1. Получаем историю для графика
+        history_str = await get_current_week_history(user_id)
+        
+        # 2. Получаем список еды (JSON) и кодируем его
+        food_log_json = await get_today_food_json(user_id)
+        food_log_encoded = quote(food_log_json)
+        # ====================
+
         base_url = "https://pcrpg2df4s-blip.github.io/diet-app/"
         url_with_params = (
             f"{base_url}?"
             f"calories={limit}&name={name}&weight={weight}&height={height}&age={age}&goal=Цель&"
-            f"c_cal={c_cal}&c_prot={c_prot}&c_fat={c_fat}&c_carb={c_carb}&"
-            f"p_max={p_max}&f_max={f_max}&c_max={c_max}" # <-- Передаем рассчитанные лимиты
+            f"c_cal={c_cal or 0}&c_prot={c_prot or 0}&c_fat={c_fat or 0}&c_carb={c_carb or 0}&"
+            f"p_max={p_max}&f_max={f_max}&c_max={c_max}&"
+            f"history={history_str}&"
+            f"food_log={food_log_encoded}" # <--- ВОТ ТУТ МЫ ДОБАВИЛИ ЕДУ В ССЫЛКУ
         )
 
         web_app_info = WebAppInfo(url=url_with_params)
         
-        # Обновляем синюю кнопку
         await message.bot.set_chat_menu_button(
             chat_id=user_id,
             menu_button=MenuButtonWebApp(text="Дневник", web_app=web_app_info)
@@ -355,31 +371,21 @@ async def cmd_start(message: Message, state: FSMContext):
 
         await message.answer(
             f"👋 С возвращением, <b>{name}</b>!\n"
-            f"Сегодня съедено: <b>{c_cal} / {limit} ккал</b>\n\n", 
+            f"Сегодня съедено: <b>{c_cal or 0} / {limit} ккал</b>\n\n"
+            f"Журнал питания обновлен! 🥗", 
             reply_markup=keyboard,
-            parse_mode=ParseMode.HTML
+            parse_mode="HTML"
         )
-
-    # === СЦЕНАРИЙ 2: РЕГИСТРАЦИЯ ===
     else:
+        # Регистрация
         async with aiosqlite.connect(DB_NAME) as db:
-            await db.execute(
-                "INSERT OR IGNORE INTO users (user_id, first_name) VALUES (?, ?)", 
-                (user_id, name)
-            )
+            await db.execute("INSERT OR IGNORE INTO users (user_id, first_name) VALUES (?, ?)", (user_id, name))
             await db.commit()
-        
-        text = (
-            f"Привет, <b>{name}</b>! ✨\n\n"
-            f"Я — твой <b>личный AI-Диетолог</b>.\n"
-            f"Давай настроим твой профиль."
-        )
         
         builder = ReplyKeyboardBuilder()
         builder.add(KeyboardButton(text="М"), KeyboardButton(text="Ж"))
         builder.adjust(2)
-        
-        await message.answer(text, reply_markup=builder.as_markup(resize_keyboard=True), parse_mode=ParseMode.HTML)
+        await message.answer(f"Привет, <b>{name}</b>! Начнем настройку. Какой твой пол?", reply_markup=builder.as_markup(resize_keyboard=True), parse_mode="HTML")
         await state.set_state(Registration.gender)
 
 @router.message(Command("eat"))
@@ -780,38 +786,40 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
     food_data = data.get("food_temp")
     
     if not food_data:
-        # Если данные устарели - просто удаляем сообщение и пишем ошибку
-        try:
-            await callback.message.delete()
-        except:
-            pass
+        try: await callback.message.delete()
+        except: pass
         await callback.message.answer("⚠️ Данные устарели.")
         await callback.answer()
         return
 
-    # 1. Парсим данные еды
+    # 1. Парсинг данных
     cals = food_data.get('cals', 0)
-    
     import re
     text = food_data.get('raw_text', '')
     def get_val(key):
         match = re.search(rf"{key}.*?(\d+)", text, re.IGNORECASE)
         return int(match.group(1)) if match else 0
-        
     prot = get_val("Белки")
     fats = get_val("Жиры")
     carbs = get_val("Углеводы")
 
     async with aiosqlite.connect(DB_NAME) as db:
-        today = date.today().isoformat()
+        today_str = date.today().isoformat()
         
-        # 2. Сохраняем еду в историю
+        # 1. Пишем в лог еды
         await db.execute("""
             INSERT INTO food_log (user_id, food_name, calories, proteins, fats, carbs, date)
             VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, food_data['name'], cals, prot, fats, carbs, today))
+        """, (user_id, food_data['name'], cals, prot, fats, carbs, today_str))
         
-        # 3. Обновляем счетчики пользователя
+        # 2. Обновляем историю для графика
+        await db.execute("""
+            INSERT INTO nutrition_history (user_id, date, total_calories)
+            VALUES (?, ?, ?)
+            ON CONFLICT(user_id, date) DO UPDATE SET total_calories = total_calories + ?
+        """, (user_id, today_str, float(cals), float(cals)))
+        
+        # 3. Обновляем профиль пользователя
         await db.execute("""
             UPDATE users 
             SET consumed_calories = consumed_calories + ?,
@@ -833,21 +841,30 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
 
     if row:
         weight, height, age, limit, c_cal, c_prot, c_fat, c_carb = row
-        
         name = callback.from_user.first_name or "Gourmet"
         limit = limit or 2500
         
-        # Считаем нормы БЖУ
         p_max = int((limit * 0.3) / 4)
         f_max = int((limit * 0.3) / 9)
         c_max = int((limit * 0.4) / 4)
+
+        # === ВОТ ТУТ НОВЫЕ СТРОКИ ===
+        # Получаем данные графика
+        history_str = await get_current_week_history(user_id)
+        
+        # Получаем список еды (JSON) и кодируем его для ссылки
+        food_log_json = await get_today_food_json(user_id)
+        food_log_encoded = quote(food_log_json)
+        # ============================
 
         base_url = "https://pcrpg2df4s-blip.github.io/diet-app/"
         url_with_params = (
             f"{base_url}?"
             f"calories={limit}&name={name}&weight={weight}&height={height}&age={age}&goal=Цель&"
             f"c_cal={c_cal}&c_prot={c_prot}&c_fat={c_fat}&c_carb={c_carb}&"
-            f"p_max={p_max}&f_max={f_max}&c_max={c_max}"
+            f"p_max={p_max}&f_max={f_max}&c_max={c_max}&"
+            f"history={history_str}&"
+            f"food_log={food_log_encoded}" # <--- ДОБАВИЛИ ПАРАМЕТР СЮДА
         )
 
         await callback.bot.set_chat_menu_button(
@@ -855,21 +872,13 @@ async def save_food_to_db(callback: CallbackQuery, state: FSMContext):
             menu_button=MenuButtonWebApp(text="Дневник", web_app=WebAppInfo(url=url_with_params))
         )
 
-        # === ВОТ ГЛАВНОЕ ИСПРАВЛЕНИЕ ===
-        # Удаляем старое сообщение с фото
-        try:
-            await callback.message.delete()
-        except:
-            pass # Если вдруг уже удалено
+        try: await callback.message.delete()
+        except: pass
         
-        # И отправляем новое чистое сообщение
         await callback.message.answer(
             f"✅ <b>Записано!</b>\n• {food_data['name']} ({cals} ккал)",
-            parse_mode=ParseMode.HTML
+            parse_mode="HTML"
         )
-        # ==============================
-
-        # Возвращаем главное меню
         await callback.message.answer("Главное меню:", reply_markup=main_menu_kb())
     
     await state.clear()

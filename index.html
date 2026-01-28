@@ -188,11 +188,11 @@ body {
 .ai-tip-card {
     background: linear-gradient(45deg, #ede7f6, #e1bee7); /* Очень светлый фиолетовый */
     border-radius: 16px;
-    padding: 15px;
+    padding: 12px;
     margin-bottom: 20px;
-    font-size: 13px;
+    font-size: 14px;
     color: #4a148c;
-    margin-top: 10px;
+    margin-top: 0px;
 }
 .ai-header { font-weight: bold; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
 
@@ -779,6 +779,16 @@ body {
             <i class="fa-regular fa-user"></i>
         </a>
     </nav>
+
+<div class="food-history-container">
+        <h3 style="margin-left: 15px; margin-top: 30px; margin-bottom: 15px;">
+            История за сегодня
+        </h3>
+
+        <div id="food-list"></div>
+
+        <div style="height: 100px;"></div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="script.js"></script>
