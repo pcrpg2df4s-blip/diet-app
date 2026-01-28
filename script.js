@@ -55,19 +55,28 @@ if (window.Telegram && window.Telegram.WebApp) {
     }
 
     function updateUI() {
-        safeSetText('target-calories', currentData.calories);
+        // 1. Инициализация переменных (СЧИТАЕМ ЦИФРЫ)
+        const goal = parseInt(currentData.calories) || 0;
+        const consumed = parseInt(currentData.c_cal) || 0;
+        const remaining = goal - consumed; // Вот тут считаем разницу!
+
+        // 2. Обновляем ГЛАВНЫЕ цифры
+        safeSetText('target-calories', goal);
+        safeSetText('consumed-val', consumed);
+        safeSetText('stats-calories-today', `${consumed} ккал`); // Обновляем и в статистике
+
+        // 👇 ГЛАВНОЕ ИСПРАВЛЕНИЕ: Пишем цифру "Осталось" вместо 1877
+        safeSetText('cal-left', remaining > 0 ? remaining : 0);
+
+        // 3. Профиль (имя, вес и т.д.)
         safeSetText('profile-name', currentData.name);
         safeSetText('user-weight', currentData.weight);
         safeSetText('user-height', currentData.height);
         safeSetText('user-age', currentData.age);
         safeSetText('user-goal', currentData.goal);
-        safeSetText('stats-calories-today', `${currentData.c_cal} ккал`);
-        safeSetText('consumed-val', parseInt(currentData.c_cal));
 
-        // Круг
-        const goal = parseInt(currentData.calories);
-        const consumed = parseInt(currentData.c_cal);
-        const percent = Math.min((consumed / goal) * 100, 100);
+        // 4. Круг прогресса
+        const percent = goal > 0 ? Math.min((consumed / goal) * 100, 100) : 0;
         const circle = document.querySelector('.progress-ring__circle');
         if (circle) {
             const radius = circle.r.baseVal.value;
@@ -76,19 +85,24 @@ if (window.Telegram && window.Telegram.WebApp) {
             circle.style.strokeDashoffset = circumference - (percent / 100) * circumference;
         }
 
-        // БЖУ
-        const p_max = urlParams.get('p_max') || Math.round((goal * 0.3)/4);
-        const f_max = urlParams.get('f_max') || Math.round((goal * 0.3)/9);
-        const c_max = urlParams.get('c_max') || Math.round((goal * 0.4)/4);
-        
-        safeSetText('prot-val', currentData.c_prot || 0); safeSetText('prot-max', p_max);
-        safeSetText('fat-val', currentData.c_fat || 0);  safeSetText('fat-max', f_max);
-        safeSetText('carb-val', currentData.c_carb || 0); safeSetText('carb-max', c_max);
-        
-        setBar('prot-bar', currentData.c_prot, p_max);
-        setBar('fat-bar', currentData.c_fat, f_max);
-        setBar('carb-bar', currentData.c_carb, c_max);
+        // 5. БЖУ (Полоски)
+        const p_max = urlParams.get('p_max') || Math.round((goal * 0.3) / 4);
+        const f_max = urlParams.get('f_max') || Math.round((goal * 0.3) / 9);
+        const c_max = urlParams.get('c_max') || Math.round((goal * 0.4) / 4);
 
+        const p_cur = parseInt(currentData.c_prot) || 0;
+        const f_cur = parseInt(currentData.c_fat) || 0;
+        const c_cur = parseInt(currentData.c_carb) || 0;
+
+        safeSetText('prot-val', p_cur); safeSetText('prot-max', p_max);
+        safeSetText('fat-val', f_cur);  safeSetText('fat-max', f_max);
+        safeSetText('carb-val', c_cur); safeSetText('carb-max', c_max);
+
+        setBar('prot-bar', p_cur, p_max);
+        setBar('fat-bar', f_cur, f_max);
+        setBar('carb-bar', c_cur, c_max);
+
+        // 6. Список еды
         renderFoodList(urlParams.get('food_log'));
     }
 
