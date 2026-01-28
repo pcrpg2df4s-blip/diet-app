@@ -1,37 +1,72 @@
-document.addEventListener('DOMContentLoaded', function() {
-    
-    // ==========================================
-    // 1. СБОР ДАННЫХ (МОЗГИ 🧠)
-    // ==========================================
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    let currentData = {
-        calories: urlParams.get('calories') || localStorage.getItem('user_calories') || "2500",
-        name: urlParams.get('name') || localStorage.getItem('user_name') || "Гость",
-        weight: urlParams.get('weight') || localStorage.getItem('user_weight') || "70",
-        height: urlParams.get('height') || localStorage.getItem('user_height') || "175",
-        age: urlParams.get('age') || localStorage.getItem('user_age') || "25",
-        goal: urlParams.get('goal') || localStorage.getItem('user_goal') || "Быть в форме",
-        c_cal: urlParams.get('c_cal') || localStorage.getItem('user_c_cal') || "0",
-        c_prot: urlParams.get('c_prot') || localStorage.getItem('user_c_prot') || "0",
-        c_fat: urlParams.get('c_fat') || localStorage.getItem('user_c_fat') || "0",
-        c_carb: urlParams.get('c_carb') || localStorage.getItem('user_c_carb') || "0"
-    };
+// ==========================================
+// 1. ИНИЦИАЛИЗАЦИЯ ТЕЛЕГРАМА (САМОЕ ВАЖНОЕ)
+// ==========================================
+let tg = null;
+try {
+    if (window.Telegram && window.Telegram.WebApp) {
+        tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Раскрыть на весь экран
+    }
+} catch (e) {
+    console.error("Ошибка Telegram:", e);
+}
 
-    try {
-        currentData.goal = decodeURI(currentData.goal);
-        currentData.name = decodeURI(currentData.name);
-    } catch (e) {}
+// ==========================================
+// 2. ГЛОБАЛЬНАЯ ФУНКЦИЯ УДАЛЕНИЯ
+// ==========================================
+window.deleteFood = function(id) {
+    // 1. Спрашиваем подтверждение
+    if (!confirm('Удалить эту запись?')) return;
 
-    if (urlParams.get('calories')) {
-        Object.keys(currentData).forEach(key => {
-            localStorage.setItem(`user_${key}`, currentData[key]);
-        });
+    // 2. Проверяем, работает ли Телеграм
+    if (!tg) {
+        alert("Ошибка: Приложение открыто не в Telegram или скрипт не загрузился.");
+        return;
     }
 
-    // ==========================================
-    // 2. ОБНОВЛЕНИЕ UI
-    // ==========================================
+    try {
+        // 3. Готовим данные
+        const data = JSON.stringify({
+            action: 'delete_food',
+            id: id
+        });
+        
+        // 4. Отправляем!
+        tg.sendData(data);
+        
+        // 5. На всякий случай закрываем окно принудительно (если sendData тупит)
+        setTimeout(() => {
+            tg.close();
+        }, 100);
+
+    } catch (error) {
+        alert("Ошибка отправки: " + error.message);
+    }
+};
+
+// ==========================================
+// 3. ОСНОВНОЙ КОД СТРАНИЦЫ
+// ==========================================
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // --- Сбор данных ---
+    let currentData = {
+        calories: urlParams.get('calories') || "2500",
+        name: decodeURI(urlParams.get('name') || "Гость"),
+        weight: urlParams.get('weight') || "70",
+        height: urlParams.get('height') || "175",
+        age: urlParams.get('age') || "25",
+        goal: decodeURI(urlParams.get('goal') || "Быть в форме"),
+        c_cal: urlParams.get('c_cal') || "0",
+        c_prot: urlParams.get('c_prot') || "0",
+        c_fat: urlParams.get('c_fat') || "0",
+        c_carb: urlParams.get('c_carb') || "0"
+    };
+
+    // --- Обновление UI ---
     function safeSetText(id, text) {
         const el = document.getElementById(id);
         if (el) el.innerText = text;
@@ -45,66 +80,41 @@ document.addEventListener('DOMContentLoaded', function() {
         safeSetText('user-age', currentData.age);
         safeSetText('user-goal', currentData.goal);
 
-        // Update calories on stats page
         safeSetText('stats-calories-today', `${currentData.c_cal} ккал`);
+        safeSetText('consumed-val', parseInt(currentData.c_cal));
 
+        // Круг прогресса
         const goal = parseInt(currentData.calories);
         const consumed = parseInt(currentData.c_cal);
-        safeSetText('consumed-val', consumed);
-
-        const remaining = goal - consumed;
-        const remainEl = document.querySelector('.stat-side .stat-val'); 
-        if (remainEl) remainEl.innerText = remaining > 0 ? remaining : 0;
-
         const percent = Math.min((consumed / goal) * 100, 100);
         const circle = document.querySelector('.progress-ring__circle');
         if (circle) {
             const radius = circle.r.baseVal.value;
             const circumference = 2 * Math.PI * radius;
             circle.style.strokeDasharray = `${circumference} ${circumference}`;
-            const offset = circumference - (percent / 100) * circumference;
-            circle.style.strokeDashoffset = offset;
+            circle.style.strokeDashoffset = circumference - (percent / 100) * circumference;
         }
 
-        // Лимиты БЖУ (передаются из Python или считаются тут)
-        const p_max_param = urlParams.get('p_max');
-        const f_max_param = urlParams.get('f_max');
-        const c_max_param = urlParams.get('c_max');
+        // БЖУ
+        const p_max = urlParams.get('p_max') || Math.round((goal * 0.3) / 4);
+        const f_max = urlParams.get('f_max') || Math.round((goal * 0.3) / 9);
+        const c_max = urlParams.get('c_max') || Math.round((goal * 0.4) / 4);
 
-        const protMax = p_max_param ? parseInt(p_max_param) : Math.round((goal * 0.3) / 4);
-        const fatMax = f_max_param ? parseInt(f_max_param) : Math.round((goal * 0.3) / 9);
-        const carbMax = c_max_param ? parseInt(c_max_param) : Math.round((goal * 0.4) / 4);
+        const p_cur = parseInt(currentData.c_prot) || 0;
+        const f_cur = parseInt(currentData.c_fat) || 0;
+        const c_cur = parseInt(currentData.c_carb) || 0;
 
-        safeSetText('prot-max', protMax);
-        safeSetText('fat-max', fatMax);
-        safeSetText('carb-max', carbMax);
+        safeSetText('prot-val', p_cur); safeSetText('prot-max', p_max);
+        safeSetText('fat-val', f_cur);  safeSetText('fat-max', f_max);
+        safeSetText('carb-val', c_cur); safeSetText('carb-max', c_max);
 
-        const protCur = parseInt(currentData.c_prot) || 0;
-        const fatCur = parseInt(currentData.c_fat) || 0;
-        const carbCur = parseInt(currentData.c_carb) || 0;
-
-        safeSetText('prot-val', protCur);
-        safeSetText('fat-val', fatCur);
-        safeSetText('carb-val', carbCur);
-
-        setBar('prot-bar', protCur, protMax);
-        setBar('fat-bar', fatCur, fatMax);
-        setBar('carb-bar', carbCur, carbMax);
-
-        // === ОТРИСОВКА ИСТОРИИ ЕДЫ (ИСПРАВЛЕНО) ===
+        setBar('prot-bar', p_cur, p_max);
+        setBar('fat-bar', f_cur, f_max);
+        setBar('carb-bar', c_cur, c_max);
+        
+        // Отрисовка списка еды
         const foodLogParam = urlParams.get('food_log');
-        if (foodLogParam) {
-            try {
-                const foodLog = JSON.parse(decodeURIComponent(foodLogParam));
-                renderFoodHistory(foodLog);
-            } catch (e) {
-                console.error("Error parsing food log:", e);
-            }
-        } else {
-             // Если данных нет, очищаем или пишем пусто
-             const historyList = document.getElementById('food-list');
-             if(historyList) historyList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Пока пусто</p>';
-        }
+        renderFoodList(foodLogParam);
     }
 
     function setBar(id, current, max) {
@@ -112,162 +122,108 @@ document.addEventListener('DOMContentLoaded', function() {
         if (bar) {
             const percent = max > 0 ? Math.min((current / max) * 100, 100) : 0;
             bar.style.width = `${percent}%`;
-
-            if (current > max) {
-                bar.style.setProperty('background', '#ff4b4b', 'important');
-            } else {
-                bar.style.removeProperty('background');
-            }
+            if (current > max) bar.style.setProperty('background', '#ff4b4b', 'important');
+            else bar.style.removeProperty('background');
         }
     }
 
-    // === НОВАЯ ФУНКЦИЯ ОТРИСОВКИ КАРТОЧЕК ===
-    function renderFoodHistory(foodLog) {
-        // ВАЖНО: Ищем 'food-list', который мы добавили в HTML в Шаге 2
-        const historyList = document.getElementById('food-list'); 
-        if (!historyList) return;
-        
-        historyList.innerHTML = ''; // Очищаем
+    // --- Отрисовка карточек ---
+    function renderFoodList(foodLogRaw) {
+        const listContainer = document.getElementById('food-list');
+        if (!listContainer) return;
 
-        if (foodLog.length === 0) {
-             historyList.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Сегодня записей нет</p>';
-             return;
+        if (!foodLogRaw) {
+            listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Пока пусто</p>';
+            return;
         }
 
-        foodLog.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'food-card'; // Используем новый класс стилей
+        try {
+            const foodList = JSON.parse(decodeURIComponent(foodLogRaw));
+            if (foodList.length === 0) {
+                 listContainer.innerHTML = '<p style="text-align:center; color:#888; margin-top:20px;">Сегодня записей нет</p>';
+                 return;
+            }
 
-            // ВАЖНО: Используем item.cal, item.p, item.f, item.c (как в Python)
-            card.innerHTML = `
-                <button class="btn-delete" onclick="deleteFood(${item.id})">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
+            listContainer.innerHTML = ''; 
 
-                <div class="food-header">
-                    <div class="food-name">${item.name}</div>
-                </div>
-
-                <div class="food-calories">${item.cal} ккал</div>
-
-                <div class="food-macros">
-                    <div class="macro-item macro-prot">🥩 <span>${item.p}</span></div>
-                    <div class="macro-item macro-fat">🥑 <span>${item.f}</span></div>
-                    <div class="macro-item macro-carb">🥖 <span>${item.c}</span></div>
-                </div>
-            `;
-            historyList.appendChild(card);
-        });
+            foodList.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'food-card';
+                card.innerHTML = `
+                    <button class="btn-delete" onclick="deleteFood(${item.id})">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                    <div class="food-header"><div class="food-name">${item.name}</div></div>
+                    <div class="food-calories">${item.cal} ккал</div>
+                    <div class="food-macros">
+                        <div class="macro-item macro-prot">🥩 <span>${item.p}</span></div>
+                        <div class="macro-item macro-fat">🥑 <span>${item.f}</span></div>
+                        <div class="macro-item macro-carb">🥖 <span>${item.c}</span></div>
+                    </div>
+                `;
+                listContainer.appendChild(card);
+            });
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     updateUI();
 
-    // ==========================================
-    // 4. TELEGRAM И НАВИГАЦИЯ
-    // ==========================================
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        const user = tg.initDataUnsafe?.user;
-        if (user && user.photo_url) {
-            const avatarImg = document.querySelector('.avatar img');
-            if (avatarImg) avatarImg.src = user.photo_url;
-        }
-    }
-
+    // --- Навигация и График ---
     const navItems = document.querySelectorAll('.nav-item');
     navItems.forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
             navItems.forEach(nav => nav.classList.remove('active'));
             document.querySelectorAll('.content-section').forEach(sec => sec.classList.remove('active'));
-            
             item.classList.add('active');
             const targetId = item.getAttribute('href').substring(1);
-            const targetSection = document.getElementById(targetId);
-            if (targetSection) {
-                targetSection.classList.add('active');
-                if (targetId === 'stats') {
-                    initStatsChart();
-                }
-            }
+            document.getElementById(targetId).classList.add('active');
+            if (targetId === 'stats') initStatsChart();
         });
     });
 
-    // ==========================================
-    // 5. ИНИЦИАЛИЗАЦИЯ ГРАФИКА СТАТИСТИКИ
-    // ==========================================
+    // График статистики
     let statsChart = null;
     function initStatsChart() {
         const ctx = document.getElementById('caloriesChart');
+        if (!ctx) return;
+        
         const historyStr = urlParams.get('history') || '0,0,0,0,0,0,0';
         const historyData = historyStr.split(',').map(Number);
-
+        
+        // Обновляем текущий день
         const todayIndex = (new Date().getDay() + 6) % 7;
-        // Тут берем актуальные данные из currentData
         historyData[todayIndex] = parseInt(currentData.c_cal) || 0;
 
-        const labels = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'];
-
-        if (ctx && !statsChart) { 
+        if (!statsChart) { 
             statsChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: labels,
+                    labels: ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'],
                     datasets: [{
                         label: 'Калории',
                         data: historyData,
-                        borderColor: '#4CAF50', // Зеленый цвет как в дизайне
+                        borderColor: '#4CAF50',
                         backgroundColor: 'rgba(76, 175, 80, 0.2)',
                         borderWidth: 3,
                         fill: true,
                         tension: 0.4,
-                        pointBackgroundColor: '#4CAF50',
-                        pointBorderColor: '#fff',
-                        pointHoverRadius: 7
+                        pointBackgroundColor: '#4CAF50'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#f0f0f0' }
-                        },
-                        x: {
-                            grid: { display: false }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }
-                    }
+                    scales: { y: { beginAtZero: true }, x: { grid: { display: false } } },
+                    plugins: { legend: { display: false } }
                 }
             });
         }
     }
-
+    
     if (document.getElementById('stats').classList.contains('active')) {
         initStatsChart();
     }
 });
-
-// ==========================================
-// 6. ФУНКЦИЯ УДАЛЕНИЯ (ГЛОБАЛЬНАЯ)
-// ==========================================
-// Мы вынесли её из DOMContentLoaded, чтобы HTML видел её
-window.deleteFood = function(id) {
-    if (confirm('Удалить эту запись?')) {
-        const data = JSON.stringify({
-            action: 'delete_food',
-            id: id
-        });
-        if (window.Telegram && window.Telegram.WebApp) {
-             window.Telegram.WebApp.sendData(data);
-        } else {
-             console.log("Telegram WebApp not found, data to send:", data);
-        }
-    }
-};
