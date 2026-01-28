@@ -268,13 +268,24 @@ body {
 }
 
 /* --- СТАТИСТИКА И ПРОФИЛЬ --- */
-.stats-card, .referral-card, .settings-group {
-    background: var(--card-bg);
+/* 1. ГРАФИК (Наш красивый градиент) */
+.stats-card {
+    background: linear-gradient(135deg, #E0F7FA 0%, #E1BEE7 100%);
     border-radius: 20px;
-    padding: 25px 25px 10px 25px;
+    padding: 25px 25px 10px 25px; /* Маленький отступ снизу */
     margin-bottom: 20px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.03);
 }
+
+/* 2. ОСТАЛЬНЫЕ КАРТОЧКИ (Белые, как раньше) */
+.referral-card, .settings-group {
+    background: var(--card-bg); /* Обычно это белый */
+    border-radius: 20px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+}
+
 .highlight-text { margin: 5px 0 20px 0; color: var(--text-main); }
 .legend { display: flex; gap: 15px; justify-content: center; margin-top: 15px; font-size: 12px; }
 
